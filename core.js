@@ -1,5 +1,5 @@
 /**
- * core.js — 设备体检内核：协议事实、固定剧本、日志解析、判定规则。
+ * core.js — 设备诊断内核：协议事实、固定剧本、日志解析、判定规则。
  *
  * 设计约束（alpha）：
  *  1. 剧本只允许查询类命令：任何带 "=<值>" 的写入命令在 isAllowedCommand() 处直接被拒。
@@ -76,7 +76,7 @@ export function buildProbeScript(opts) {
   return sanitizeScript(steps);
 }
 
-/** 体检主剧本：variant 由探测结果决定 */
+/** 诊断主剧本：variant 由探测结果决定 */
 export function buildPlanScript(variant, opts) {
   const o = opts || {};
   const password = o.password || "";

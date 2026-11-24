@@ -1,6 +1,6 @@
 # 设备控制台协议笔记
 
-本文记录体检剧本与解析所依赖的**设备事实**及其来源。改判定/改剧本前请先读。
+本文记录诊断剧本与解析所依赖的**设备事实**及其来源。改判定/改剧本前请先读。
 
 ## 1. 物理与串口
 
@@ -9,7 +9,7 @@
 | 调试串口位置 | 板子**右上角 3 针**（TXD/RXD/GND），与客户远程配置接线相同 | `lify-t/doc/for_client/instruction/NB-IoT_Configuration_Guide_Universal.docx` |
 | 串口参数 | 9600 8N1，行尾 `\\r\\n` | `lify-t/doc/AT_Command_Manual_EN_lora.md` §2（vcom.c） |
 | USB-TTL 适配器 | CH340（VID 0x1a86 / PID 0x7523）；CH343 属 CDC | signal_tester `3-webusb/index.html` 注释与实测记录 |
-| 固件更新口 | 另一处 4-pin SWD（GND/NRST/CLK/DIO），走 ST-LINK，不用于体检 | 同上 dociument 附录 |
+| 固件更新口 | 另一处 4-pin SWD（GND/NRST/CLK/DIO），走 ST-LINK，不用于诊断 | 同上 dociument 附录 |
 
 ## 2. AT 解锁
 
@@ -62,7 +62,7 @@ REBOOT_CAUSE_APPLICATION_AT
 
 `Angle` 块给当前 Roll/Pitch；`Internal Comparison Angle` 块给内部对比角。
 偏差超过 `AT+CTANGLE` 阈值时，设备下一次上报就会触发倾斜警报——这是"装完忘重置对比角"
-的典型坑，所以体检把 `|Δ| > CTANGLE` 判为**提示**而不是失败。
+的典型坑，所以诊断把 `|Δ| > CTANGLE` 判为**提示**而不是失败。
 
 IMU 失效的典型指纹：`Roll=179.29 Pitch=179.29`（两轴几乎相等且接近 180）。判据：
 `||roll|-|pitch|| < 0.6` 且两者 `>= 179` → fail。

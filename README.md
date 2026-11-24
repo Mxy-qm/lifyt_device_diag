@@ -1,6 +1,6 @@
-# lifyt_device_diag · 设备体检（USB-TTL 直连）
+# lifyt_device_diag · 设备诊断（USB-TTL 直连）
 
-USB-TTL 接到 LiFY-T 树传感器的串口，网页自动跑一套**固定体检剧本**，直接给出
+USB-TTL 接到 LiFY-T 树传感器的串口，网页自动跑一套**固定诊断剧本**，直接给出
 PASS / WARN / FAIL、分组明细和可复制的报告。客户只需要插线、点一次按钮、看结论。
 
 - 变体：TSE NB（BC95-GV / OneNET）与 TSE LoRaWAN（Pixel/TrackCentral 侧），**自动识别**
@@ -30,7 +30,7 @@ WebUSB 要求安全上下文：**HTTPS 或 localhost**。iOS 浏览器不支持 
 页面最底下「回放模式」把已有日志粘进去（或导入 .txt），走同一套解析与判定。
 也可以直接在地址后面加 `?demo=1` 看内置的健康样本。
 
-## 体检项
+## 诊断项
 
 | 分组 | 检查项 | 判据 |
 |---|---|---|
@@ -79,4 +79,4 @@ node tests/page.test.mjs
 ## 关系
 
 - 连接层移植自 `signal_tester/3-webusb/index.html` 的 CH340 驱动（详见 POSITIONING.md 的差异说明）
-- 判定字段与口径对齐 `tree-sensor-manufacture-qc` 的 `check_logs.py`，但这里是"现场体检"而不是"产线 QC"
+- 判定字段与口径对齐 `tree-sensor-manufacture-qc` 的 `check_logs.py`，但这里是"现场诊断"而不是"产线 QC"

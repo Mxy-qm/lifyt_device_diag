@@ -1,6 +1,6 @@
 # Agent Instructions — lifyt_device_diag
 
-本仓库是「USB-TTL 直连设备体检」的纯前端工具。改动前先读 `POSITIONING.md`（边界）和
+本仓库是「USB-TTL 直连设备诊断」的纯前端工具。改动前先读 `POSITIONING.md`（边界）和
 `docs/protocol-notes.md`（协议事实与来源）。
 
 ## 硬规则

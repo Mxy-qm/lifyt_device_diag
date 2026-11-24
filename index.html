@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>设备体检 · LiFY-T device diag</title>
+<title>设备诊断 · LiFY-T device diag</title>
 <style>
   :root{
     --bg:#f2f7f3; --card:#fff; --ink:#16321f; --muted:#5f7a68; --line:#d9e6dd;
@@ -58,7 +58,7 @@
 </head>
 <body>
 <header>
-  <div class="brand"><span data-i18n="brand">设备体检</span><small>LiFY-T</small></div>
+  <div class="brand"><span data-i18n="brand">设备诊断</span><small>LiFY-T</small></div>
   <span class="grow"></span>
   <span id="chip" class="chip off" data-i18n="notConnected">未连接</span>
   <select id="lang" aria-label="language">
@@ -74,7 +74,7 @@
   <section class="card">
     <h2 data-i18n="connectTitle">第一步 · 连接设备</h2>
     <div class="row">
-      <button id="btnRun" data-i18n="runCheck">连接并体检</button>
+      <button id="btnRun" data-i18n="runCheck">连接并诊断</button>
       <button id="btnDisconnect" class="ghost" data-i18n="disconnect" disabled>断开</button>
     </div>
     <div class="muted" style="margin-top:8px" id="hint" data-i18n="connectHint">手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点上面的按钮。</div>
@@ -108,7 +108,7 @@
   <section class="card">
     <div id="verdict" class="verdict idle">
       <div>
-        <div class="big" id="verdictText" data-i18n="idleVerdict">等待体检</div>
+        <div class="big" id="verdictText" data-i18n="idleVerdict">等待诊断</div>
         <div class="sub" id="verdictSub" data-i18n="idleSub">连上设备后会自动跑完一套固定检查</div>
       </div>
       <span class="grow"></span>
@@ -141,7 +141,7 @@
     <input id="replayFile" type="file" accept=".txt,.log,.md">
     <textarea id="replayText" data-i18n-placeholder="replayPlaceholder" placeholder="粘贴设备串口日志…"></textarea>
     <div class="row" style="margin-top:8px">
-      <button id="btnReplay" class="ghost" data-i18n="runReplay">用这段日志体检</button>
+      <button id="btnReplay" class="ghost" data-i18n="runReplay">用这段日志诊断</button>
     </div>
   </details>
 </main>
@@ -161,26 +161,26 @@ import {
 /* ---------------- i18n ---------------- */
 const T = {
   zh: {
-    brand:"设备体检", notConnected:"未连接", connected:"已连接", connecting:"连接中…", noDevice:"没有选中设备",
-    connectTitle:"第一步 · 连接设备", runCheck:"连接并体检", disconnect:"断开",
+    brand:"设备诊断", notConnected:"未连接", connected:"已连接", connecting:"连接中…", noDevice:"没有选中设备",
+    connectTitle:"第一步 · 连接设备", runCheck:"连接并诊断", disconnect:"断开",
     connectHint:"手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点上面的按钮。",
     advTitle:"高级（内部使用）", lblPassword:"AT 密码（留空则跳过解锁）", lblBaud:"波特率",
     lblReboot:"重启采集完整启动信息（ATZ）", lblShowIds:"显示完整序列号",
     lblProfile:"批次期望值（JSON，可选；填了就按期望值比对）", optYes:"是（推荐）", optNo:"否", optYes2:"是", optNo2:"否（脱敏）",
-    idleVerdict:"等待体检", idleSub:"连上设备后会自动跑完一套固定检查",
+    idleVerdict:"等待诊断", idleSub:"连上设备后会自动跑完一套固定检查",
     bFail:"不通过", bWarn:"提示", bPass:"通过",
     resultsTitle:"检查结果", resultsEmpty:"还没有结果。",
     copyReport:"复制报告", downloadReport:"下载报告", copyLog:"复制日志",
     rawTitle:"原始串口日志", replayTitle:"回放模式（用已有日志验证判定）",
     replayHint:"把设备日志粘进来，或用文件导入，走同一套解析与判定，不需要连硬件。",
-    replayPlaceholder:"粘贴设备串口日志…", runReplay:"用这段日志体检",
+    replayPlaceholder:"粘贴设备串口日志…", runReplay:"用这段日志诊断",
     footerNote:"纯前端单页：不联网、不上传日志。判定规则见 docs/protocol-notes.md。",
     alphaBanner:"Alpha 内测版：判定口径与文案可能变动，结论仅供内部参考。",
-    vPass:"体检通过", vWarn:"通过，有提示", vFail:"未通过",
+    vPass:"诊断通过", vWarn:"通过，有提示", vFail:"未通过",
     subPass:"关键项全部正常", subWarn:"有需要留意的项，见下方明细",
     subFail:"有项目不合格，见下方明细",
     copied:"已复制", copyFail:"复制失败", noVerdict:"还没有可导出的结果。",
-    connecting2:"正在体检，请别拔线…", emptyLog:"没有收到任何数据：检查接线（TX/RX 是否交叉）、波特率、设备是否上电。",
+    connecting2:"正在诊断，请别拔线…", emptyLog:"没有收到任何数据：检查接线（TX/RX 是否交叉）、波特率、设备是否上电。",
     group:{identity:"系统信息",identityVals:"设备标识",config:"参数配置",power:"电源",sensor:"传感器",time:"时间与重启",network:"网络",log:"日志检查"},
     item:{"v.detect":"设备识别","v.firmware":"固件版本","id.deviceId":"设备 ID","id.authInfo":"AuthInfo","id.productId":"产品 ID","id.devEui":"DevEUI","cfg.server":"服务器地址","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"频段","cfg.intervals":"采集/上报间隔","cfg.ctangle":"角度阈值","cfg.ityp":"安装方式","pwr.battery":"电池电压","sen.angle":"当前角度","sen.icangle":"内部对比角","sen.alarmDiff":"角度偏差","time.rtc":"设备时间","time.rebootCause":"重启原因","net.csq":"信号 (CSQ)","net.cfun":"射频状态 (CFUN)","net.imei":"IMEI","net.iccid":"ICCID","net.join":"入网状态","net.rssi":"RSSI","log.password":"AT 解锁","log.errors":"错误行"},
     note:{
@@ -214,25 +214,25 @@ const T = {
     }
   },
   zhHant: {
-    brand:"設備體檢", notConnected:"未連線", connected:"已連線", connecting:"連線中…", noDevice:"沒有選中裝置",
-    connectTitle:"第一步 · 連線裝置", runCheck:"連線並體檢", disconnect:"中斷",
+    brand:"設備診斷", notConnected:"未連線", connected:"已連線", connecting:"連線中…", noDevice:"沒有選中裝置",
+    connectTitle:"第一步 · 連線裝置", runCheck:"連線並診斷", disconnect:"中斷",
     connectHint:"手機/電腦用 USB-TTL 接裝置右上角 3 針（TXD/RXD/GND），插上後點上面的按鈕。",
     advTitle:"進階（內部使用）", lblPassword:"AT 密碼（留空則跳過解鎖）", lblBaud:"鮑率",
     lblReboot:"重啟採集完整開機資訊（ATZ）", lblShowIds:"顯示完整序號",
     lblProfile:"批次期望值（JSON，可選；填了就按期望值比對）", optYes:"是（建議）", optNo:"否", optYes2:"是", optNo2:"否（去識別）",
-    idleVerdict:"等待體檢", idleSub:"連上裝置後會自動跑完一套固定檢查",
+    idleVerdict:"等待診斷", idleSub:"連上裝置後會自動跑完一套固定檢查",
     bFail:"不通過", bWarn:"提示", bPass:"通過",
     resultsTitle:"檢查結果", resultsEmpty:"還沒有結果。",
     copyReport:"複製報告", downloadReport:"下載報告", copyLog:"複製日誌",
     rawTitle:"原始序列埠日誌", replayTitle:"回放模式（用既有日誌驗證判定）",
     replayHint:"把裝置日誌貼進來，或用檔案匯入，走同一套解析與判定，不需要連硬體。",
-    replayPlaceholder:"貼上裝置序列埠日誌…", runReplay:"用這段日誌體檢",
+    replayPlaceholder:"貼上裝置序列埠日誌…", runReplay:"用這段日誌診斷",
     footerNote:"純前端單頁：不連網、不上傳日誌。判定規則見 docs/protocol-notes.md。",
     alphaBanner:"Alpha 內測版：判定口徑與文案可能變動，結論僅供內部參考。",
-    vPass:"體檢通過", vWarn:"通過，有提示", vFail:"未通過",
+    vPass:"診斷通過", vWarn:"通過，有提示", vFail:"未通過",
     subPass:"關鍵項全部正常", subWarn:"有需要留意的項，見下方明細", subFail:"有項目不合格，見下方明細",
     copied:"已複製", copyFail:"複製失敗", noVerdict:"還沒有可匯出的結果。",
-    connecting2:"正在體檢，請別拔線…", emptyLog:"沒有收到任何資料：檢查接線（TX/RX 是否交叉）、鮑率、裝置是否上電。",
+    connecting2:"正在診斷，請別拔線…", emptyLog:"沒有收到任何資料：檢查接線（TX/RX 是否交叉）、鮑率、裝置是否上電。",
     group:{identity:"系統資訊",identityVals:"裝置識別",config:"參數設定",power:"電源",sensor:"感測器",time:"時間與重啟",network:"網路",log:"日誌檢查"},
     item:{"v.detect":"裝置識別","v.firmware":"韌體版本","id.deviceId":"裝置 ID","id.authInfo":"AuthInfo","id.productId":"產品 ID","id.devEui":"DevEUI","cfg.server":"伺服器位址","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"頻段","cfg.intervals":"採集/上報間隔","cfg.ctangle":"角度閾值","cfg.ityp":"安裝方式","pwr.battery":"電池電壓","sen.angle":"目前角度","sen.icangle":"內部比對角","sen.alarmDiff":"角度偏差","time.rtc":"裝置時間","time.rebootCause":"重啟原因","net.csq":"訊號 (CSQ)","net.cfun":"射頻狀態 (CFUN)","net.imei":"IMEI","net.iccid":"ICCID","net.join":"入網狀態","net.rssi":"RSSI","log.password":"AT 解鎖","log.errors":"錯誤行"},
     note:{
@@ -266,7 +266,7 @@ const T = {
     }
   },
   en: {
-    brand:"Device Check", notConnected:"Disconnected", connected:"Connected", connecting:"Connecting…", noDevice:"No device selected",
+    brand:"Device Diagnostics", notConnected:"Disconnected", connected:"Connected", connecting:"Connecting…", noDevice:"No device selected",
     connectTitle:"Step 1 · Connect", runCheck:"Connect & check", disconnect:"Disconnect",
     connectHint:"Wire USB-TTL to the 3 pins at the top-right of the board (TXD/RXD/GND), plug in, then press the button.",
     advTitle:"Advanced (internal)", lblPassword:"AT password (blank = skip unlock)", lblBaud:"Baud rate",
@@ -578,7 +578,7 @@ async function teardown() {
   $("btnDisconnect").disabled = true;
 }
 
-/* ---------------- 体检流程 ---------------- */
+/* ---------------- 诊断流程 ---------------- */
 async function runSteps(steps) {
   for (const step of steps) {
     if (step.kind === "listen") { await sleep(step.ms); continue; }
