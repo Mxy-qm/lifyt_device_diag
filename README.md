@@ -8,6 +8,13 @@ PASS / WARN / FAIL、分组明细和可复制的报告。客户只需要插线�
 - 判定：以设备控制台的真实输出为准，不猜；给了批次期望值就逐项比对
 - 形态：纯前端单页，不联网、不上传日志
 
+## 仓库
+
+- 远端：<https://github.com/Mxy-qm/lifyt_device_diag>（**私有**）
+- 默认分支：`main`
+- 克隆：`git clone https://github.com/Mxy-qm/lifyt_device_diag.git`
+- 只有静态文件，没有构建步骤、没有包依赖；部署时把仓库根目录当站点根即可（要求 HTTPS）
+
 ## 快速开始
 
 ```powershell
