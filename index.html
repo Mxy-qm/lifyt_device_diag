@@ -53,6 +53,10 @@
   .muted{color:var(--muted);font-size:.82rem}
   footer{max-width:940px;margin:0 auto;padding:0 14px 28px;color:var(--muted);font-size:.76rem}
   .banner{border:1px dashed #e0c9a6;background:#fffaf0;color:#7a5a12;border-radius:10px;padding:8px 10px;font-size:.8rem;margin-bottom:10px}
+  [hidden]{display:none !important}
+  .mask{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:30}
+  .mask .box{background:#fff;border-radius:14px;padding:14px;max-width:760px;width:100%}
+  .mask textarea{width:100%;height:260px;font-family:ui-monospace,Consolas,monospace;font-size:.78rem}
   @media(max-width:640px){.adv{grid-template-columns:1fr}.verdict .big{font-size:1.25rem}}
 </style>
 </head>
@@ -126,6 +130,17 @@
   </details>
 </main>
 
+<div id="copyMask" class="mask" hidden>
+  <div class="box">
+    <div style="font-weight:700;margin-bottom:6px" data-i18n="copyFailedTitle">自动复制没成功</div>
+    <div class="muted" style="margin-bottom:8px" data-i18n="copyFailedHint">下面是完整内容，长按全选手动复制。</div>
+    <textarea id="copyArea" readonly></textarea>
+    <div class="row" style="margin-top:10px;justify-content:flex-end">
+      <button id="btnCopyClose" data-i18n="close">关闭</button>
+    </div>
+  </div>
+</div>
+
 <footer>
   <div id="verLine"></div>
   <div data-i18n="footerNote">纯前端单页：不联网、不上传日志。判定规则见 docs/protocol-notes.md。</div>
@@ -136,7 +151,7 @@
 <script type="module">
 import {
   APP_VERSION, PROTOCOL, isAllowedCommand,
-  buildProbeScript, buildPlanScript,
+  buildProbeScript, buildPlanScript, buildUnlockScript,
   detectVariant, parseConsole, evaluate
 } from "./core.js";
 
@@ -158,13 +173,16 @@ const T = {
     lockedTitle:"未解锁 AT：深度项本次没有检查",
     lockedBody:"电池电压、SIM/网络、采集与上报间隔、角度阈值这类「要问设备才拿得到」的项没有测，结果里标成「未检查」。这不是设备的问题。",
     skipNote:"未解锁 AT，本次未检查",
+    skipUnread:"没读到（设备没有回这个查询）",
+    copyFailedTitle:"自动复制没成功",
+    copyFailedHint:"下面是完整内容，长按全选手动复制。", close:"关闭",
     vPass:"诊断通过", vWarn:"通过，有提示", vFail:"未通过",
     subPass:"关键项全部正常", subWarn:"有需要留意的项，见下方明细",
     subFail:"有项目不合格，见下方明细",
     copied:"已复制", copyFail:"复制失败", noVerdict:"还没有可导出的结果。",
     connecting2:"正在诊断，请别拔线…", emptyLog:"没有收到任何数据：检查接线（TX/RX 是否交叉）、设备是否上电。",
     group:{identity:"系统信息",identityVals:"设备标识",config:"参数配置",power:"电源",sensor:"传感器",time:"时间与重启",network:"网络",log:"日志检查"},
-    item:{"v.detect":"设备识别","v.firmware":"固件版本","id.deviceId":"设备 ID","id.authInfo":"AuthInfo","id.productId":"产品 ID","id.devEui":"DevEUI","cfg.server":"服务器地址","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"频段","cfg.intervals":"采集/上报间隔","cfg.ctangle":"角度阈值","cfg.ityp":"安装方式","pwr.battery":"电池电压","sen.angle":"当前角度","sen.icangle":"内部对比角","sen.alarmDiff":"角度偏差","time.rtc":"设备时间","time.rebootCause":"重启原因","net.csq":"信号 (CSQ)","net.cfun":"射频状态 (CFUN)","net.imei":"IMEI","net.iccid":"ICCID","net.join":"入网状态","net.rssi":"RSSI","log.password":"AT 解锁","log.errors":"错误行"},
+    item:{"v.detect":"设备识别","v.firmware":"固件版本","id.deviceId":"设备 ID","id.authInfo":"AuthInfo","id.productId":"产品 ID","id.devEui":"DevEUI","cfg.server":"服务器地址","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"频段","cfg.intervals":"采集/上报间隔","cfg.ctangle":"角度阈值","cfg.ityp":"安装方式","pwr.battery":"电池电压","sen.angle":"当前角度","sen.icangle":"内部对比角","sen.alarmDiff":"角度偏差","time.rtc":"设备时间","time.rebootCause":"重启原因","net.csq":"信号 (CSQ)","net.cfun":"射频状态 (CFUN)","net.sim":"SIM 卡","net.reg":"网络注册","net.imei":"IMEI","net.iccid":"ICCID","net.join":"入网状态","net.rssi":"RSSI","log.password":"AT 解锁","log.errors":"错误行"},
     note:{
       "v.detect.fail":"没有识别到设备型号，检查接线（TX/RX 是否交叉）。",
       "v.firmware.warn":"没读到固件版本号。",
@@ -188,10 +206,12 @@ const T = {
       "time.rtc.warn":"设备时间没对上（未同步 RTC），不影响上报但会影响判断时间。",
       "net.csq.warn":"设备未驻网或信号很差（99,99 或低位）。",
       "net.cfun.fail":"射频已关闭（CFUN:0）。",
+      "net.sim.warn":"AT+CIMI 返回 ERROR：SIM 没插好或还没就绪。",
+      "net.reg.warn":"设备没注册到网络（+CEREG stat 0）。",
       "net.join.warn":"LoRaWAN 尚未入网。",
       "net.rssi.warn":"上一包的 RSSI 偏弱。",
       "log.password.warn":"密码错误，后面的查询可能都拿不到数据。",
-      "log.errors.fail":"日志里出现 ERROR 行。",
+      "log.errors.warn":"有 AT 命令被固件拒绝（AT_ERROR），可能是固件写法与剧本不一致。",
       "expected":"期望" , "value":"实测"
     }
   },
@@ -211,12 +231,15 @@ const T = {
     lockedTitle:"未解鎖 AT：深度項本次沒有檢查",
     lockedBody:"電池電壓、SIM/網路、採集與上報間隔、角度閾值這類「要問裝置才拿得到」的項沒有測，結果裡標成「未檢查」。這不是裝置的問題。",
     skipNote:"未解鎖 AT，本次未檢查",
+    skipUnread:"沒讀到（裝置沒有回這個查詢）",
+    copyFailedTitle:"自動複製沒成功",
+    copyFailedHint:"下面是完整內容，長按全選手動複製。", close:"關閉",
     vPass:"診斷通過", vWarn:"通過，有提示", vFail:"未通過",
     subPass:"關鍵項全部正常", subWarn:"有需要留意的項，見下方明細", subFail:"有項目不合格，見下方明細",
     copied:"已複製", copyFail:"複製失敗", noVerdict:"還沒有可匯出的結果。",
     connecting2:"正在診斷，請別拔線…", emptyLog:"沒有收到任何資料：檢查接線（TX/RX 是否交叉）、裝置是否上電。",
     group:{identity:"系統資訊",identityVals:"裝置識別",config:"參數設定",power:"電源",sensor:"感測器",time:"時間與重啟",network:"網路",log:"日誌檢查"},
-    item:{"v.detect":"裝置識別","v.firmware":"韌體版本","id.deviceId":"裝置 ID","id.authInfo":"AuthInfo","id.productId":"產品 ID","id.devEui":"DevEUI","cfg.server":"伺服器位址","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"頻段","cfg.intervals":"採集/上報間隔","cfg.ctangle":"角度閾值","cfg.ityp":"安裝方式","pwr.battery":"電池電壓","sen.angle":"目前角度","sen.icangle":"內部比對角","sen.alarmDiff":"角度偏差","time.rtc":"裝置時間","time.rebootCause":"重啟原因","net.csq":"訊號 (CSQ)","net.cfun":"射頻狀態 (CFUN)","net.imei":"IMEI","net.iccid":"ICCID","net.join":"入網狀態","net.rssi":"RSSI","log.password":"AT 解鎖","log.errors":"錯誤行"},
+    item:{"v.detect":"裝置識別","v.firmware":"韌體版本","id.deviceId":"裝置 ID","id.authInfo":"AuthInfo","id.productId":"產品 ID","id.devEui":"DevEUI","cfg.server":"伺服器位址","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"頻段","cfg.intervals":"採集/上報間隔","cfg.ctangle":"角度閾值","cfg.ityp":"安裝方式","pwr.battery":"電池電壓","sen.angle":"目前角度","sen.icangle":"內部比對角","sen.alarmDiff":"角度偏差","time.rtc":"裝置時間","time.rebootCause":"重啟原因","net.csq":"訊號 (CSQ)","net.cfun":"射頻狀態 (CFUN)","net.sim":"SIM 卡","net.reg":"網路註冊","net.imei":"IMEI","net.iccid":"ICCID","net.join":"入網狀態","net.rssi":"RSSI","log.password":"AT 解鎖","log.errors":"錯誤行"},
     note:{
       "v.detect.fail":"沒有識別到裝置型號，檢查接線（TX/RX 是否交叉）。",
       "v.firmware.warn":"沒讀到韌體版本。",
@@ -240,10 +263,12 @@ const T = {
       "time.rtc.warn":"裝置時間沒對上（未同步 RTC），不影響上報但會影響判斷時間。",
       "net.csq.warn":"裝置未駐網或訊號很差（99,99 或低位）。",
       "net.cfun.fail":"射頻已關閉（CFUN:0）。",
+      "net.sim.warn":"AT+CIMI 回傳 ERROR：SIM 沒插好或還沒就緒。",
+      "net.reg.warn":"裝置沒註冊到網路（+CEREG stat 0）。",
       "net.join.warn":"LoRaWAN 尚未入網。",
       "net.rssi.warn":"上一包的 RSSI 偏弱。",
       "log.password.warn":"密碼錯誤，後面的查詢可能都拿不到資料。",
-      "log.errors.fail":"日誌裡出現 ERROR 行。",
+      "log.errors.warn":"有 AT 命令被韌體拒絕（AT_ERROR），可能是韌體寫法與劇本不一致。",
       "expected":"期望", "value":"實測"
     }
   },
@@ -263,12 +288,15 @@ const T = {
     lockedTitle:"AT not unlocked — deep items were not checked",
     lockedBody:"Battery, SIM/network, collection/report intervals and the angle threshold are only available by querying the device. They were not measured and are marked “not checked”. This is not a device fault.",
     skipNote:"Not checked (AT locked)",
+    skipUnread:"Not read (device did not answer this query)",
+    copyFailedTitle:"Automatic copy failed",
+    copyFailedHint:"Full content below — select all and copy manually.", close:"Close",
     vPass:"Check passed", vWarn:"Passed with warnings", vFail:"Check failed",
     subPass:"All key items normal", subWarn:"Some items need attention — see details below", subFail:"Some items failed — see details below",
     copied:"Copied", copyFail:"Copy failed", noVerdict:"Nothing to export yet.",
     connecting2:"Running the check — keep the cable plugged in…", emptyLog:"No data received: check wiring (TX/RX crossed), device power.",
     group:{identity:"System",identityVals:"Identity",config:"Configuration",power:"Power",sensor:"Sensor",time:"Time & reboot",network:"Network",log:"Log"},
-    item:{"v.detect":"Device","v.firmware":"Firmware","id.deviceId":"Device ID","id.authInfo":"AuthInfo","id.productId":"Product ID","id.devEui":"DevEUI","cfg.server":"Server","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"Band","cfg.intervals":"Collect/report interval","cfg.ctangle":"Angle threshold","cfg.ityp":"Mounting","pwr.battery":"Battery","sen.angle":"Current angle","sen.icangle":"Reference angle","sen.alarmDiff":"Angle delta","time.rtc":"Device time","time.rebootCause":"Reboot cause","net.csq":"Signal (CSQ)","net.cfun":"RF state (CFUN)","net.imei":"IMEI","net.iccid":"ICCID","net.join":"Join state","net.rssi":"RSSI","log.password":"AT unlock","log.errors":"Error lines"},
+    item:{"v.detect":"Device","v.firmware":"Firmware","id.deviceId":"Device ID","id.authInfo":"AuthInfo","id.productId":"Product ID","id.devEui":"DevEUI","cfg.server":"Server","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"Band","cfg.intervals":"Collect/report interval","cfg.ctangle":"Angle threshold","cfg.ityp":"Mounting","pwr.battery":"Battery","sen.angle":"Current angle","sen.icangle":"Reference angle","sen.alarmDiff":"Angle delta","time.rtc":"Device time","time.rebootCause":"Reboot cause","net.csq":"Signal (CSQ)","net.cfun":"RF state (CFUN)","net.sim":"SIM","net.reg":"Registration","net.imei":"IMEI","net.iccid":"ICCID","net.join":"Join state","net.rssi":"RSSI","log.password":"AT unlock","log.errors":"Error lines"},
     note:{
       "v.detect.fail":"Device model not detected — check the wiring (TX/RX crossed).",
       "v.firmware.warn":"Firmware version missing.",
@@ -292,10 +320,12 @@ const T = {
       "time.rtc.warn":"Device clock is not set — harmless for reporting but confusing for timing.",
       "net.csq.warn":"Not attached or very weak signal (99,99 or low).",
       "net.cfun.fail":"RF disabled (CFUN:0).",
+      "net.sim.warn":"AT+CIMI returned ERROR — SIM missing or not ready.",
+      "net.reg.warn":"Device is not registered on the network (+CEREG stat 0).",
       "net.join.warn":"LoRaWAN not joined.",
       "net.rssi.warn":"Last packet RSSI is weak.",
       "log.password.warn":"Wrong password — later queries may return nothing.",
-      "log.errors.fail":"ERROR line present in the log.",
+      "log.errors.warn":"An AT command was rejected by the firmware (AT_ERROR) — the script form may not match this firmware.",
       "expected":"expected", "value":"actual"
     }
   }
@@ -351,12 +381,15 @@ function setChip(on, pending) {
   chip.textContent = pending ? t("connecting") : on ? t("connected") : t("notConnected");
 }
 
-function logLine(s) {
-  buffer += s + "\r\n";
+let display = "";           // 给界面看的（带 ← → 和 [sys] 提示）
+function showLog(s) {
+  display += s + "\r\n";
   const box = $("logbox");
-  box.textContent = buffer.length > 40000 ? buffer.slice(-40000) : buffer;
+  box.textContent = display.length > 40000 ? display.slice(-40000) : display;
   box.scrollTop = box.scrollHeight;
 }
+function logLine(s) { showLog(s); }                       // 内部提示，不进解析
+function logDevice(line) { buffer += line + "\r\n"; showLog("← " + line); }
 
 /* ---------------- CH340 over WebUSB ---------------- */
 const WCH_VID = 0x1a86, CH343_PID = 0x55d3;
@@ -537,7 +570,7 @@ function pipeRead(p) {
           if (ch === "\n" || ch === "\r") {
             if (lineBuf) {
               const line = lineBuf; lineBuf = "";
-              if (!line.startsWith("TX> ")) logLine("← " + line);
+              logDevice(line);
             }
           } else lineBuf += ch;
         }
@@ -550,7 +583,9 @@ function pipeRead(p) {
 
 async function sendLine(line) {
   const payload = line + PROTOCOL.lineEnding;
-  logLine("→ " + (line ? line : "<CRLF>"));
+  // buffer 里保留 TX 记录（用来判断 ERROR 是哪个命令回的），但密码不落进去
+  buffer += "TX> " + (line === "" ? "<CRLF>" : /^AT/i.test(line) ? line : "<hidden>") + "\r\n";
+  showLog("→ " + (line ? line : "<CRLF>"));
   await writer.write(new TextEncoder().encode(payload));
   await writer.ready;
 }
@@ -569,11 +604,33 @@ async function runSteps(steps) {
   for (const step of steps) {
     if (step.kind === "listen") { await sleep(step.ms); continue; }
     if (step.kind === "send") {
-      const line = step.raw ? step.line : step.line;
+      const line = step.line;
       if (!step.raw && !isAllowedCommand(line)) { logLine("[skip] 剧本里出现非查询命令：" + line); continue; }
+      const mark = buffer.length;
       try { await sendLine(line); } catch (e) { if (!step.bestEffort) throw e; logLine("[warn] 发送失败：" + line); }
       await sleep(step.waitMs || 500);
+      // 固件对某种写法不认（AT_ERROR 或干脆不回）时，换备选写法再试一次
+      if (step.alt && isAllowedCommand(step.alt)) {
+        const chunk = buffer.slice(mark).replace(/^[ \t]*TX>[^\n]*$/gm, "");
+        if (/AT_ERROR/i.test(chunk) || chunk.replace(/\s+/g, "").length === 0) {
+          logLine("[sys] " + line + " 没被接受，改用 " + step.alt);
+          try { await sendLine(step.alt); } catch (e) { if (!step.bestEffort) throw e; }
+          await sleep(step.waitMs || 500);
+        }
+      }
     }
+  }
+}
+
+/** 等设备把启动块打完：看到 Enter Password 立刻返回，或连续安静 quietMs 也算完 */
+async function waitForBootDone(maxMs, quietMs) {
+  const start = Date.now();
+  let lastLen = buffer.length, lastChange = Date.now();
+  while (Date.now() - start < (maxMs || 12000)) {
+    await sleep(200);
+    if (/Enter Password to Active AT Commands/i.test(buffer)) { await sleep(500); return; }
+    if (buffer.length !== lastLen) { lastLen = buffer.length; lastChange = Date.now(); continue; }
+    if (Date.now() - lastChange >= (quietMs || 1500)) return;
   }
 }
 
@@ -581,7 +638,7 @@ async function runCheck() {
   if (busy) return;
   busy = true;
   $("btnRun").disabled = true;
-  buffer = ""; lineBuf = ""; lastResult = null;
+  buffer = ""; lineBuf = ""; display = ""; lastResult = null;
   $("logbox").textContent = "";
   const password = AT_PASSWORD;
   try {
@@ -604,13 +661,13 @@ async function runCheck() {
     setChip(true);
     $("btnDisconnect").disabled = false;
     logLine("[sys] 已连接 @" + PROTOCOL.baudRate);
-    await runSteps([{ kind: "send", line: "", waitMs: 600 }]);
-    const probe = buildProbeScript({ password: password });
-    await runSteps(probe);
+    // ATZ 固定执行：不重启就拿不到完整启动块，启动块是这套诊断里最全的一份证据
+    await runSteps(buildProbeScript({ password: password }));
+    await waitForBootDone(12000, 1500);
+    await runSteps(buildUnlockScript(password));
     const variant = detectVariant(buffer);
     logLine("[sys] 变体判定: " + variant);
-    // ATZ 固定执行：不重启就拿不到完整启动块，启动块是这套诊断里最全的一份证据
-    const plan = buildPlanScript(variant === "unknown" ? "nb" : variant, { password: password, reboot: true });
+    const plan = buildPlanScript(variant === "unknown" ? "nb" : variant, { reboot: false });
     await runSteps(plan);
     finalize();
   } catch (e) {
@@ -671,7 +728,7 @@ function render(res) {
       dot.className = "dot " + it.level;
       td1.appendChild(dot);
       td1.appendChild(document.createTextNode(tItem(it.id)));
-      const note = tNote(it.id, it.level) || (it.level === "skip" ? t("skipNote") : "");
+      const note = tNote(it.id, it.level) || (it.level === "skip" ? t(it.reason === "locked" ? "skipNote" : "skipUnread") : "");
       if (note) {
         const n = document.createElement("div");
         n.className = "note " + (it.level === "fail" ? "fail" : it.level === "warn" ? "warn" : "");
@@ -720,13 +777,38 @@ function reportText(res) {
 }
 
 async function copyText(text) {
-  try { await navigator.clipboard.writeText(text); }
-  catch (e) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) {}
+  try {
     const ta = document.createElement("textarea");
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); } catch (e2) {}
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "0";
+    ta.style.left = "0";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    const ok = document.execCommand("copy");
     document.body.removeChild(ta);
-  }
+    if (ok) return true;
+  } catch (e) {}
+  return false;
+}
+
+/** 复制失败时把内容摊开，让人自己长按全选 */
+function showCopyFallback(text) {
+  $("copyArea").value = text;
+  $("copyMask").hidden = false;
+  const ta = $("copyArea");
+  ta.focus();
+  ta.setSelectionRange(0, 0);
 }
 
 /* ---------------- 事件 ---------------- */
@@ -740,10 +822,12 @@ $("btnRun").addEventListener("click", runCheck);
 $("btnDisconnect").addEventListener("click", async () => { await teardown(); });
 $("btnCopy").addEventListener("click", async () => {
   if (!lastResult) return;
-  await copyText(reportText(lastResult));
+  const ok = await copyText(reportText(lastResult));
+  if (!ok) { showCopyFallback(reportText(lastResult)); return; }
   const b = $("btnCopy"); const old = b.textContent;
   b.textContent = t("copied"); setTimeout(() => { b.textContent = old; }, 1200);
 });
+$("btnCopyClose").addEventListener("click", () => { $("copyMask").hidden = true; });
 $("btnDownload").addEventListener("click", () => {
   if (!lastResult) return;
   const blob = new Blob([reportText(lastResult)], { type: "text/plain;charset=utf-8" });
@@ -754,7 +838,9 @@ $("btnDownload").addEventListener("click", () => {
   URL.revokeObjectURL(a.href);
 });
 $("btnCopyLog").addEventListener("click", async () => {
-  await copyText(buffer);
+  const text = display || buffer;
+  const ok = await copyText(text);
+  if (!ok) { showCopyFallback(text); return; }
   const b = $("btnCopyLog"); const old = b.textContent;
   b.textContent = t("copied"); setTimeout(() => { b.textContent = old; }, 1200);
 });

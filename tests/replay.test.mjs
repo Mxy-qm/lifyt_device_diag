@@ -4,7 +4,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import {
-  isAllowedCommand, sanitizeScript, buildPlanScript, buildProbeScript,
+  isAllowedCommand, sanitizeScript, buildPlanScript, buildProbeScript, buildUnlockScript,
+  stripLogDecorations,
   detectVariant, parseConsole, parseRtc, evaluate, maskValue
 } from "../core.js";
 
@@ -39,11 +40,23 @@ test("剧本里被篡改的写命令会被剔除", () => {
 test("主剧本随变体变化，且都可审计", () => {
   const nb = buildPlanScript("nb", { password: "123456", reboot: true });
   const lora = buildPlanScript("lora", { password: "", reboot: false });
-  assert.ok(nb.some((s) => s.line === "AT+DEVID"));
-  assert.ok(!lora.some((s) => s.line === "AT+DEVID"));
+  // NB 固件取值为 AT+X=?，并带裸写备选
+  assert.ok(nb.some((s) => s.line === "AT+DEVID=?"));
+  assert.ok(nb.some((s) => s.line === "AT+DEVID=? " === false || s.alt === "AT+DEVID"));
+  assert.ok(!lora.some((s) => s.line === "AT+DEVID=?"));
   assert.ok(lora.some((s) => s.line === "AT+CFG"));
   assert.ok(nb.every((s) => s.kind !== "send" || s.raw || isAllowedCommand(s.line)));
-  assert.ok(buildProbeScript({ password: "x" }).some((s) => s.line === "AT+VER"));
+  assert.ok(nb.every((s) => !s.alt || isAllowedCommand(s.alt)));
+});
+
+test("探测剧本会重启拿启动块，重启后有再解锁", () => {
+  const probe = buildProbeScript({ password: "123456" });
+  assert.ok(probe.some((s) => s.line === "ATZ"), "探测要发 ATZ");
+  assert.ok(probe.some((s) => s.raw && s.line === "123456"), "探测要带密码");
+  const unlock = buildUnlockScript("123456");
+  assert.equal(unlock.length, 1);
+  assert.equal(unlock[0].raw, true);
+  assert.deepEqual(buildUnlockScript(""), []);
 });
 
 /* ---------- 解析 ---------- */
@@ -187,6 +200,50 @@ test("没解锁时不把「没读到」当成异常", () => {
   assert.equal(v.verdict, "pass", "解锁缺失本身不该把结论压成 warn/fail");
   const v2 = evaluate(parseConsole(load("nb-lowbattery.txt")));
   assert.equal(v2.locked, false);
+});
+
+test("界面日志前缀不会污染解析", () => {
+  const withArrows = "← DRAGINO TSE NB Device\n← APN= JWE\n← COPS= 45412\n← Server IP & PORT= 47.1.2.3,6002\n← Time: 26/11/20 09:12:44\n[skip] 剧本里出现非查询命令：\n→ AT+VER\n";
+  const r = parseConsole(withArrows);
+  assert.equal(r.config.apn, "JWE");
+  assert.equal(r.config.cops, "45412");
+  assert.equal(r.config.server, "47.1.2.3,6002");
+  assert.ok(r.rtc && r.rtc.y4 === 2026);
+  assert.equal(stripLogDecorations("← APN= JWE").trim(), "APN= JWE");
+});
+
+test("没抓到的项标未读，不当成异常", () => {
+  const noBattery = [
+    "DRAGINO TSE NB Device",
+    "Image Version: TSE NB v1.4 260623",
+    "Time: 21/1/29 02:51:59",
+    "Angle", "Roll=-92.99 Pitch=165.48",
+    "Internal Comparison Angle", "Roll:-84.77 Pitch:7.98",
+    "Device ID= 161628395", "Product ID= 16000695", "AuthInfo= LFTAN00605az6FG",
+    "APN= JWE", "COPS= 45412", "Server IP & PORT= 47.91.203.178,6002",
+    "Correct Password"
+  ].join("\n");
+  const r = parseConsole(noBattery);
+  const v = evaluate(r, { locked: false });
+  const L = levels(v);
+  assert.equal(L.get("pwr.battery"), "skip", "没回 AT+BAT 时应标未读，不该说电压低");
+  assert.equal(v.groups.find((g) => g.id === "power").items[0].reason, "unread");
+  assert.equal(L.get("cfg.apn"), "pass", "APN 有值就是通过");
+  assert.equal(L.get("cfg.cops"), "pass");
+  assert.equal(L.get("time.rtc"), "warn", "RTC 2021 应提示");
+});
+
+test("有配置但没网：CSQ/注册/SIM 都要指出，配置本身仍判通过", () => {
+  const r = parseConsole(load("nb-no-network.txt"));
+  const v = evaluate(r, { locked: false });
+  const L = levels(v);
+  assert.equal(L.get("cfg.apn"), "pass");
+  assert.equal(L.get("cfg.server"), "pass");
+  assert.equal(L.get("net.csq"), "warn");
+  assert.equal(L.get("net.reg"), "warn");
+  assert.equal(L.get("net.sim"), "warn", "CIMI 报错应指向 SIM 未就绪");
+  assert.equal(L.get("pwr.battery"), "skip");
+  assert.equal(v.verdict, "warn");
 });
 
 test("掩码只留尾号", () => {

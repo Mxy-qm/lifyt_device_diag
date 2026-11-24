@@ -1,0 +1,25 @@
+DRAGINO TSE NB Device
+Image Version: TSE NB v1.4 260623
+Time: 21/1/29 02:51:59
+Angle
+Roll=-92.99 Pitch=165.48
+Internal Comparison Angle
+Roll:-84.77 Pitch:7.98
+Device ID= 869930000000512
+Product ID= 16000695
+AuthInfo= LFTAN00512HWsy
+APN= JWE
+COPS= 45412
+Server IP & PORT= 47.91.203.178,6002
+REBOOT_CAUSE_APPLICATION_AT
+Correct Password
++CSQ:99,99 Query whether the network is activated? 1
++CEREG:0,0
+OK
++COPS:2
+OK
+TX> AT+CIMI
+ERROR
++NBAND:8
+OK
+MPY25L700000512
