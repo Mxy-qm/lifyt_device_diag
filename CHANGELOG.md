@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.3-alpha — 2026-11-24
+
+- 变更：AT 密码改为直接写入 `config.js` 并提交（仓库 public，alpha 临时做法；理由与代价见 README）
+- 变更：删除 `config.local.js` / 模板与对应 gitignore 条目，配置只剩一个文件
+- 新增：README「密码与公开仓库」一节，写明"公开过 = 泄露过，改回 private 或发客户前必须换密码"
+
 ## v0.1.2-alpha — 2026-11-24
 
 - 变更：波特率固定 9600，移除波特率选项

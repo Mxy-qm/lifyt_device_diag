@@ -37,7 +37,18 @@ WebUSB 要求安全上下文：**HTTPS 或 localhost**。iOS 浏览器不支持 
 页面最底下「回放模式」把已有日志粘进去（或导入 .txt），走同一套解析与判定。
 也可以直接在地址后面加 `?demo=1` 看内置的健康样本。
 
-## 配置：AT 密码
+## 密码与公开仓库（alpha 临时做法）
+
+本仓库现在是 **public**，alpha 阶段直接把 AT 密码写在 [config.js](config.js) 里提交：
+
+```js
+window.DC_CONFIG = { atPassword: "******", profile: null };
+```
+
+- 为什么能接受：纯前端页面里的密码挡不住 F12，反正现场远程诊断时客户也能看到；提交只是省掉每次手输
+- **代价**：公开过的密码就等于泄露过——git 历史里那份会一直在，别人 fork/clone 也带走了
+- 所以：**改回 private 之前、或正式发客户之前，必须换一次设备 AT 密码**（改完只更新 config.js 并提交）
+- 发客户时更稳的做法是换 Cloudflare Pages + Access（邮箱白名单），仓库保持 public 也无所谓
 
 设备固件把 AT 命令锁在密码后面（防止有人插线就改 Device ID / AuthInfo / 服务器地址）。
 密码属于**我们掌握的常量**，不出现在界面上：
@@ -49,7 +60,7 @@ Copy-Item config.local.example.js config.local.js   # 已 gitignore，不会提�
 
 - `config.js`（已提交）：只有空默认值，`atPassword: ""`
 - `config.local.js`（不提交）：真实密码，页面加载时覆盖默认值
-- 不填也能跑：拿到的是设备上电自动打印的那一段（身份、配置、角度、对比角、重启原因、CSQ）
+- 留空也能跑：拿到的是设备上电自动打印的那一段（身份、配置、角度、对比角、重启原因、CSQ）
 - 拿不到的是"要问设备才说"的项：电池电压、IMEI/ICCID、采集/上报间隔、角度阈值、安装方式、CFUN/NBAND
 
 **没解锁时这些项一律标「未检查」，页面顶部会挂一条提示**——不会把"没读到"算成设备异常，
@@ -89,8 +100,7 @@ Copy-Item config.local.example.js config.local.js   # 已 gitignore，不会提�
 lifyt_device_diag/
 ├─ index.html                单页 UI + CH340/Web Serial 连接层
 ├─ core.js                   协议事实、剧本、解析、判定（无 DOM，node 可测）
-├─ config.js                 默认配置（空密码 / 可选期望值），可提交
-├─ config.local.example.js   本地配置模板；复制成 config.local.js 填密码（不提交）
+├─ config.js                 AT 密码 + 可选期望值（alpha 阶段直接提交）
 ├─ docs/protocol-notes.md    设备控制台协议事实与来源、待真机确认项
 ├─ tests/replay.test.mjs     解析/判定/白名单断言（合成日志，无真实凭证）
 ├─ tests/page.test.mjs       页面与三语标签、DOM、无外链的一致性检查
