@@ -6,6 +6,6 @@
   "description": "LeafIoT USB-TTL 设备体检工具（纯前端单页 + 固定体检剧本）",
   "scripts": {
     "test": "node tests/replay.test.mjs && node tests/page.test.mjs",
-    "serve": "python -m http.server 8765"
+    "serve": "python -m http.server 8771"
   }
 }

@@ -27,7 +27,7 @@
 ```powershell
 node tests/replay.test.mjs
 node tests/page.test.mjs
-python -m http.server 8765   # 人工看页面
+python -m http.server 8771   # 人工看页面
 ```
 
 本仓库没有构建步骤、没有包依赖；`package.json` 只用于 `"type": "module"` 和测试入口。

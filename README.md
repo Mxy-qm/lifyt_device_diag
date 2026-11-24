@@ -12,8 +12,9 @@ PASS / WARN / FAIL、分组明细和可复制的报告。客户只需要插线�
 
 ```powershell
 cd device-check
-python -m http.server 8765        # 或双击 serve.cmd
-# 浏览器打开 http://127.0.0.1:8765
+python -m http.server 8771        # 或双击 serve.cmd
+# 浏览器打开 http://127.0.0.1:8771
+# 端口被占用就换一个（本机 8765 已被别的服务占着）
 ```
 
 WebUSB 要求安全上下文：**HTTPS 或 localhost**。iOS 浏览器不支持 WebUSB（同 signal_tester 的结论）。
