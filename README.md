@@ -37,6 +37,26 @@ WebUSB 要求安全上下文：**HTTPS 或 localhost**。iOS 浏览器不支持 
 页面最底下「回放模式」把已有日志粘进去（或导入 .txt），走同一套解析与判定。
 也可以直接在地址后面加 `?demo=1` 看内置的健康样本。
 
+## 配置：AT 密码与批次期望值
+
+设备固件把 AT 命令锁在密码后面（防止有人插线就改 Device ID / AuthInfo / 服务器地址）。
+密码属于**我们掌握的常量**，不出现在界面上：
+
+```powershell
+Copy-Item config.local.example.js config.local.js   # 已 gitignore，不会提交
+# 编辑 config.local.js，填 atPassword（可选再填 profile 批次期望值）
+```
+
+- `config.js`（已提交）：只有空默认值，`atPassword: ""`
+- `config.local.js`（不提交）：真实密码，页面加载时覆盖默认值
+- 不填也能跑：拿到的是设备上电自动打印的那一段（身份、配置、角度、对比角、重启原因、CSQ）
+- 拿不到的是"要问设备才说"的项：电池电压、IMEI/ICCID、采集/上报间隔、角度阈值、安装方式、CFUN/NBAND
+
+**没解锁时这些项一律标「未检查」，页面顶部会挂一条提示**——不会把"没读到"算成设备异常，
+也不会静默显示成通过。这是硬规则（见 AGENTS.md）。
+
+> 安全说明：纯前端页面里的密码挡不住会按 F12 的人，这里的目标只是不把密码摆在界面上、不写进日志。
+
 ## 诊断项
 
 | 分组 | 检查项 | 判据 |
@@ -53,6 +73,9 @@ WebUSB 要求安全上下文：**HTTPS 或 localhost**。iOS 浏览器不支持 
 
 阈值集中在 `core.js` 的 `DEFAULT_THRESHOLDS`，改之前先看 `docs/protocol-notes.md`。
 
+解锁状态会影响判定：**没有确认解锁成功时**（没有 `Correct Password`），需要查询才拿得到的
+项（电池、间隔、阈值、安装方式、频段、CSQ、ICCID）标成 `skip / 未检查`，不参与 PASS/WARN/FAIL 汇总。
+
 ## 安全边界
 
 - **只发查询命令**：`isAllowedCommand()` 拒绝任何 `AT+X=值` 的写入；`AT+FDR / AT+DISAT / AT+SIMLOCK / AT+CICICLE / AT+CICANGLE` 等直接黑名单。剧本在 `buildPlanScript()` 里是常量，客户界面没有命令输入框。
@@ -66,6 +89,8 @@ WebUSB 要求安全上下文：**HTTPS 或 localhost**。iOS 浏览器不支持 
 lifyt_device_diag/
 ├─ index.html                单页 UI + CH340/Web Serial 连接层
 ├─ core.js                   协议事实、剧本、解析、判定（无 DOM，node 可测）
+├─ config.js                 默认配置（空密码 / 期望值），可提交
+├─ config.local.example.js   本地配置模板；复制成 config.local.js 填密码（不提交）
 ├─ docs/protocol-notes.md    设备控制台协议事实与来源、待真机确认项
 ├─ tests/replay.test.mjs     解析/判定/白名单断言（合成日志，无真实凭证）
 ├─ tests/page.test.mjs       页面与三语标签、DOM、无外链的一致性检查

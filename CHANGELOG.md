@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.1-alpha — 2026-11-24
+
+- 变更：AT 密码从界面移除，改由 `config.local.js`（gitignore）注入；客户与内部界面上都不再出现密码框
+- 变更：新增「未解锁 = 未检查」语义 —— 需要查询才拿得到的项（电池、间隔、阈值、安装方式、频段、CSQ、ICCID）
+  在未确认解锁时标 `skip` 并在页面顶部提示，不再当成设备异常（硬规则见 AGENTS.md 第 8 条）
+- 新增：`config.js`（空默认值）+ `config.local.example.js`（模板）；期望值也可来自配置
+- 修复：`evaluate()` 返回值新增 `locked`，供页面显示提示条
+
 ## v0.1.0-alpha — 2026-11-24
 
 首个内测版。

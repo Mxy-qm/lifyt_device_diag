@@ -19,7 +19,24 @@
 证据：产线 QC 日志中 `[Tx] 83724` → `[Rx] Correct Password`，随后 `AT+CFG` 才有回显。
 
 - 剧本里密码作为 `raw` 步骤发送，不经过白名单（它本来就不是 AT 命令）
-- 密码不落盘、不写进日志文件；只在页面内存里用
+- 密码来源：`config.local.js`（gitignore）→ 页面内存；**不进 UI、不进日志、不提交**
+- 密码换过了就更新这个文件；不填 = 只做免解锁检查
+
+### 2.1 免解锁能拿到什么（真实产线日志，密码门前那 21 行）
+
+```
+DRAGINO TSE NB Device      Image Version: TSE NB v1.4 …
+Time: …                    Angle / Internal Comparison Angle
+Device ID=  Product ID=  AuthInfo=  APN=  COPS=  Server IP & PORT=
+REBOOT_CAUSE_APPLICATION_AT        +CSQ:13,99 Query whether the network is activated?
+```
+
+| 免解锁可得 | 解锁才可得 |
+|---|---|
+| 型号、固件版本、RTC、当前角度、内部对比角、Device ID、Product ID、AuthInfo、APN、COPS、服务器地址、重启原因、CSQ | 电池电压（`AT+BAT`）、IMEI（`AT+CGSN`）、ICCID、采集/上报间隔（`AT+STDC`/`AT+TDC`）、角度阈值（`AT+CTANGLE`）、安装方式（`AT+ITYP`）、CFUN、NBAND |
+
+判定口径：**没有 `Correct Password` 就视为 locked**，上表右侧那些项一律 `skip / 未检查`，
+不参与 PASS/WARN/FAIL 汇总，页面顶部挂提示。这条是硬规则，理由是"没测"和"测了不合格"必须区分开。
 
 ## 3. 变体与命令集
 

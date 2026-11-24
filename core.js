@@ -7,7 +7,7 @@
  *  3. 本文件不碰 DOM，浏览器与 node 测试共用。
  */
 
-export const APP_VERSION = "0.1.0-alpha";
+export const APP_VERSION = "0.1.1-alpha";
 
 /** 设备控制台协议事实 */
 export const PROTOCOL = {
@@ -275,6 +275,8 @@ function item(id, level, value, extra) {
 export function evaluate(report, opts) {
   const o = opts || {};
   const profile = o.profile || {};
+  // locked = 本次没有确认解锁 AT：需要"问设备"才拿得到的项一律标 skip，不许当成异常
+  const locked = !!o.locked;
   const th = Object.assign({}, DEFAULT_THRESHOLDS, o.thresholds || {});
   const groups = [];
   const R = report || {};
@@ -322,14 +324,14 @@ export function evaluate(report, opts) {
     if (profile.cops) { copsItem.expected = profile.cops; copsItem.level = cfg.cops === profile.cops ? "pass" : "fail"; }
     cfgItems.push(copsItem);
 
-    const bandItem = item("cfg.nband", cfg.nband ? "pass" : "warn", cfg.nband);
+    const bandItem = item("cfg.nband", cfg.nband ? "pass" : locked ? "skip" : "warn", cfg.nband);
     if (profile.nband) { bandItem.expected = profile.nband; bandItem.level = cfg.nband === profile.nband ? "pass" : "fail"; }
     cfgItems.push(bandItem);
   }
 
   const intervals = cfg.tdc && cfg.stdc ? cfg.stdc + " / " + cfg.tdc : null;
   let intLevel = "pass";
-  if (!cfg.tdc || !cfg.stdc) intLevel = "warn";
+  if (!cfg.tdc || !cfg.stdc) intLevel = locked ? "skip" : "warn";
   else if (cfg.tdc % cfg.stdc !== 0) intLevel = "warn";
   const intItem = item("cfg.intervals", intLevel, intervals);
   if (profile.tdc || profile.stdc) {
@@ -338,12 +340,12 @@ export function evaluate(report, opts) {
   }
   cfgItems.push(intItem);
 
-  const ctItem = item("cfg.ctangle", cfg.ctangle === null ? "warn" : "pass", cfg.ctangle);
+  const ctItem = item("cfg.ctangle", cfg.ctangle === null ? (locked ? "skip" : "warn") : "pass", cfg.ctangle);
   if (profile.ctangle !== undefined) { ctItem.expected = profile.ctangle; ctItem.level = Number(cfg.ctangle) === Number(profile.ctangle) ? "pass" : "fail"; }
   cfgItems.push(ctItem);
 
   if (R.variant === "nb") {
-    const itItem = item("cfg.ityp", cfg.ityp === null ? "warn" : "pass", cfg.ityp);
+    const itItem = item("cfg.ityp", cfg.ityp === null ? (locked ? "skip" : "warn") : "pass", cfg.ityp);
     if (profile.ityp !== undefined) { itItem.expected = profile.ityp; itItem.level = String(cfg.ityp) === String(profile.ityp) ? "pass" : "fail"; }
     cfgItems.push(itItem);
   }
@@ -351,7 +353,7 @@ export function evaluate(report, opts) {
 
   /* 电源 */
   const pwr = [];
-  if (R.batteryMv === null || R.batteryMv === undefined) pwr.push(item("pwr.battery", "warn", null));
+  if (R.batteryMv === null || R.batteryMv === undefined) pwr.push(item("pwr.battery", locked ? "skip" : "warn", null));
   else {
     const lvl = R.batteryMv < th.batteryFail ? "fail" : R.batteryMv < th.batteryWarn ? "warn" : "pass";
     pwr.push(item("pwr.battery", lvl, R.batteryMv, { unit: "mV" }));
@@ -367,7 +369,7 @@ export function evaluate(report, opts) {
     const sentinel = bothNear && Math.abs(a.roll) >= th.angleSentinel && Math.abs(a.pitch) >= th.angleSentinel;
     sen.push(item("sen.angle", sentinel ? "fail" : "pass", a.roll + " / " + a.pitch, { unit: "°" }));
   }
-  if (!R.icangle) sen.push(item("sen.icangle", "warn", null));
+  if (!R.icangle) sen.push(item("sen.icangle", locked ? "skip" : "warn", null));
   else sen.push(item("sen.icangle", "pass", R.icangle.roll + " / " + R.icangle.pitch, { unit: "°" }));
 
   if (R.angle && R.icangle) {
@@ -391,7 +393,7 @@ export function evaluate(report, opts) {
   /* 网络 */
   const netItems = [];
   if (R.variant === "nb") {
-    if (!net.csq) netItems.push(item("net.csq", "warn", null));
+    if (!net.csq) netItems.push(item("net.csq", locked ? "skip" : "warn", null));
     else if (net.csq.rssi === 99) netItems.push(item("net.csq", "warn", "99,99"));
     else netItems.push(item("net.csq", net.csq.rssi >= 10 ? "pass" : "warn", net.csq.rssi + "," + net.csq.ber));
     if (net.cfun !== null && net.cfun !== undefined) netItems.push(item("net.cfun", net.cfun === 1 ? "pass" : "fail", net.cfun));
@@ -407,7 +409,7 @@ export function evaluate(report, opts) {
   groups.push({
     id: "log",
     items: [
-      item("log.password", R.flags && R.flags.passwordRejected ? "warn" : R.flags && R.flags.passwordAccepted ? "pass" : "skip", null),
+      item("log.password", R.flags && R.flags.passwordAccepted ? "pass" : R.flags && R.flags.passwordRejected ? "warn" : "skip", null),
       item("log.errors", R.flags && R.flags.error ? "fail" : "pass", null)
     ]
   });
@@ -419,7 +421,7 @@ export function evaluate(report, opts) {
   const verdict = counts.fail > 0 ? "fail" : counts.warn > 0 ? "warn" : "pass";
   const top = flat.filter(function (it) { return it.level === "fail" || it.level === "warn"; })
     .slice(0, 5).map(function (it) { return it.id; });
-  return { verdict: verdict, counts: counts, groups: groups, top: top, profileUsed: hasProfile };
+  return { verdict: verdict, counts: counts, groups: groups, top: top, profileUsed: hasProfile, locked: locked };
 }
 
 export function maskValue(v, visible) {

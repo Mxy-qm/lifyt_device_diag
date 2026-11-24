@@ -159,6 +159,36 @@ test("给了批次期望值后按期望值判", () => {
   assert.deepEqual(bad.groups.find((g) => g.id === "config").items.find((i) => i.id === "cfg.server").expected, "1.1.1.1,5683");
 });
 
+test("没解锁时不把「没读到」当成异常", () => {
+  const lockedText = [
+    "DRAGINO TSE NB Device",
+    "Image Version: TSE NB v1.4 260826",
+    "Time: 26/11/20 09:12:44",
+    "Angle",
+    "Roll=-90.35 Pitch=107.50",
+    "Internal Comparison Angle",
+    "Roll:-90.12 Pitch:107.33",
+    "Device ID= 869930000000117",
+    "Product ID= 1106",
+    "AuthInfo= LFTAN000117HWsy",
+    "APN= cmhk",
+    "COPS= 45412",
+    "Server IP & PORT= 183.0.0.0,5683",
+    "Correct Password".replace("Correct ", "")
+  ].join("\n");
+  const r = parseConsole(lockedText);
+  assert.equal(r.flags.passwordAccepted, false);
+  const v = evaluate(r, { locked: true });
+  const L = levels(v);
+  assert.equal(v.locked, true);
+  assert.equal(L.get("pwr.battery"), "skip", "没拿到电池电压应标未检查，而不是提示");
+  assert.equal(L.get("cfg.intervals"), "skip");
+  assert.equal(L.get("cfg.ctangle"), "skip");
+  assert.equal(v.verdict, "pass", "解锁缺失本身不该把结论压成 warn/fail");
+  const v2 = evaluate(parseConsole(load("nb-lowbattery.txt")));
+  assert.equal(v2.locked, false);
+});
+
 test("掩码只留尾号", () => {
   assert.equal(maskValue("869930000000117"), "…117");
   assert.equal(maskValue(null), "—");

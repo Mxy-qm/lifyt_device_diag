@@ -1,6 +1,6 @@
 {
   "name": "lifyt-device-diag",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "LeafIoT USB-TTL 设备诊断工具（纯前端单页 + 固定诊断剧本）",

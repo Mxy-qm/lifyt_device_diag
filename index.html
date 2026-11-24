@@ -82,10 +82,6 @@
       <summary data-i18n="advTitle">高级（内部使用）</summary>
       <div class="adv" style="margin-top:10px">
         <div>
-          <label for="pw" data-i18n="lblPassword">AT 密码（留空则跳过解锁）</label>
-          <input id="pw" type="password" autocomplete="off" placeholder="••••••">
-        </div>
-        <div>
           <label for="baud" data-i18n="lblBaud">波特率</label>
           <select id="baud"><option value="0">自动（9600 → 115200）</option><option value="9600">9600</option><option value="115200">115200</option></select>
         </div>
@@ -117,6 +113,11 @@
       <div class="badge"><b id="cntPass">0</b><span data-i18n="bPass">通过</span></div>
     </div>
   </section>
+
+  <div class="banner" id="lockedBanner" hidden>
+    <b data-i18n="lockedTitle">未解锁 AT：深度项本次没有检查</b>
+    <div style="margin-top:4px" data-i18n="lockedBody">电池电压、SIM/网络、采集与上报间隔、角度阈值这类"要问设备才拿得到"的项目没有测，结果里标成「未检查」。这不是设备的问题。</div>
+  </div>
 
   <section class="card" id="results">
     <h2 data-i18n="resultsTitle">检查结果</h2>
@@ -151,6 +152,10 @@
   <div data-i18n="footerNote">纯前端单页：不联网、不上传日志。判定规则见 docs/protocol-notes.md。</div>
 </footer>
 
+<script src="./config.js"></script>
+<!-- 可选：本地覆盖（已 gitignore），不存在时浏览器会报 404，不影响功能 -->
+<script src="./config.local.js" onerror="void 0"></script>
+
 <script type="module">
 import {
   APP_VERSION, PROTOCOL, isAllowedCommand,
@@ -164,7 +169,7 @@ const T = {
     brand:"设备诊断", notConnected:"未连接", connected:"已连接", connecting:"连接中…", noDevice:"没有选中设备",
     connectTitle:"第一步 · 连接设备", runCheck:"连接并诊断", disconnect:"断开",
     connectHint:"手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点上面的按钮。",
-    advTitle:"高级（内部使用）", lblPassword:"AT 密码（留空则跳过解锁）", lblBaud:"波特率",
+    advTitle:"高级（内部使用）", lblBaud:"波特率",
     lblReboot:"重启采集完整启动信息（ATZ）", lblShowIds:"显示完整序列号",
     lblProfile:"批次期望值（JSON，可选；填了就按期望值比对）", optYes:"是（推荐）", optNo:"否", optYes2:"是", optNo2:"否（脱敏）",
     idleVerdict:"等待诊断", idleSub:"连上设备后会自动跑完一套固定检查",
@@ -176,6 +181,9 @@ const T = {
     replayPlaceholder:"粘贴设备串口日志…", runReplay:"用这段日志诊断",
     footerNote:"纯前端单页：不联网、不上传日志。判定规则见 docs/protocol-notes.md。",
     alphaBanner:"Alpha 内测版：判定口径与文案可能变动，结论仅供内部参考。",
+    lockedTitle:"未解锁 AT：深度项本次没有检查",
+    lockedBody:"电池电压、SIM/网络、采集与上报间隔、角度阈值这类「要问设备才拿得到」的项没有测，结果里标成「未检查」。这不是设备的问题。",
+    skipNote:"未解锁 AT，本次未检查",
     vPass:"诊断通过", vWarn:"通过，有提示", vFail:"未通过",
     subPass:"关键项全部正常", subWarn:"有需要留意的项，见下方明细",
     subFail:"有项目不合格，见下方明细",
@@ -217,7 +225,7 @@ const T = {
     brand:"設備診斷", notConnected:"未連線", connected:"已連線", connecting:"連線中…", noDevice:"沒有選中裝置",
     connectTitle:"第一步 · 連線裝置", runCheck:"連線並診斷", disconnect:"中斷",
     connectHint:"手機/電腦用 USB-TTL 接裝置右上角 3 針（TXD/RXD/GND），插上後點上面的按鈕。",
-    advTitle:"進階（內部使用）", lblPassword:"AT 密碼（留空則跳過解鎖）", lblBaud:"鮑率",
+    advTitle:"進階（內部使用）", lblBaud:"鮑率",
     lblReboot:"重啟採集完整開機資訊（ATZ）", lblShowIds:"顯示完整序號",
     lblProfile:"批次期望值（JSON，可選；填了就按期望值比對）", optYes:"是（建議）", optNo:"否", optYes2:"是", optNo2:"否（去識別）",
     idleVerdict:"等待診斷", idleSub:"連上裝置後會自動跑完一套固定檢查",
@@ -229,6 +237,9 @@ const T = {
     replayPlaceholder:"貼上裝置序列埠日誌…", runReplay:"用這段日誌診斷",
     footerNote:"純前端單頁：不連網、不上傳日誌。判定規則見 docs/protocol-notes.md。",
     alphaBanner:"Alpha 內測版：判定口徑與文案可能變動，結論僅供內部參考。",
+    lockedTitle:"未解鎖 AT：深度項本次沒有檢查",
+    lockedBody:"電池電壓、SIM/網路、採集與上報間隔、角度閾值這類「要問裝置才拿得到」的項沒有測，結果裡標成「未檢查」。這不是裝置的問題。",
+    skipNote:"未解鎖 AT，本次未檢查",
     vPass:"診斷通過", vWarn:"通過，有提示", vFail:"未通過",
     subPass:"關鍵項全部正常", subWarn:"有需要留意的項，見下方明細", subFail:"有項目不合格，見下方明細",
     copied:"已複製", copyFail:"複製失敗", noVerdict:"還沒有可匯出的結果。",
@@ -269,7 +280,7 @@ const T = {
     brand:"Device Diagnostics", notConnected:"Disconnected", connected:"Connected", connecting:"Connecting…", noDevice:"No device selected",
     connectTitle:"Step 1 · Connect", runCheck:"Connect & check", disconnect:"Disconnect",
     connectHint:"Wire USB-TTL to the 3 pins at the top-right of the board (TXD/RXD/GND), plug in, then press the button.",
-    advTitle:"Advanced (internal)", lblPassword:"AT password (blank = skip unlock)", lblBaud:"Baud rate",
+    advTitle:"Advanced (internal)", lblBaud:"Baud rate",
     lblReboot:"Reboot to capture full boot log (ATZ)", lblShowIds:"Show full serial numbers",
     lblProfile:"Batch expectations (JSON, optional)", optYes:"Yes (recommended)", optNo:"No", optYes2:"Yes", optNo2:"No (masked)",
     idleVerdict:"Waiting", idleSub:"A fixed check runs automatically once connected",
@@ -281,6 +292,9 @@ const T = {
     replayPlaceholder:"Paste device serial log…", runReplay:"Check this log",
     footerNote:"Single-page frontend: no network, no uploads. Rule notes in docs/protocol-notes.md.",
     alphaBanner:"Alpha: wording and thresholds may change; for internal use.",
+    lockedTitle:"AT not unlocked — deep items were not checked",
+    lockedBody:"Battery, SIM/network, collection/report intervals and the angle threshold are only available by querying the device. They were not measured and are marked “not checked”. This is not a device fault.",
+    skipNote:"Not checked (AT locked)",
     vPass:"Check passed", vWarn:"Passed with warnings", vFail:"Check failed",
     subPass:"All key items normal", subWarn:"Some items need attention — see details below", subFail:"Some items failed — see details below",
     copied:"Copied", copyFail:"Copy failed", noVerdict:"Nothing to export yet.",
@@ -318,6 +332,10 @@ const T = {
     }
   }
 };
+
+/* ---------------- 本地配置（密码等不进 UI） ---------------- */
+const CFG = window.DC_CONFIG || {};
+const AT_PASSWORD = typeof CFG.atPassword === "string" ? CFG.atPassword : "";
 
 /* ---------------- state & helpers ---------------- */
 const $ = (id) => document.getElementById(id);
@@ -597,7 +615,7 @@ async function runCheck() {
   $("btnRun").disabled = true;
   buffer = ""; lineBuf = ""; lastResult = null;
   $("logbox").textContent = "";
-  const password = $("pw").value.trim();
+  const password = AT_PASSWORD;
   const reboot = $("reboot").value === "1";
   const baudPref = Number($("baud").value || 0);
   const bauds = baudPref ? [baudPref] : PROTOCOL.baudCandidates;
@@ -649,7 +667,9 @@ function readProfile() {
 function finalize() {
   if (!buffer.trim()) { $("hint").textContent = t("emptyLog"); return; }
   const report = parseConsole(buffer);
-  const verdict = evaluate(report, { profile: readProfile() });
+  // 没有确认解锁成功 = locked：需要"问设备"才拿得到的项标未检查，不当异常
+  const locked = !(report.flags && report.flags.passwordAccepted);
+  const verdict = evaluate(report, { profile: readProfile(), locked: locked });
   lastResult = { report, verdict };
   render(lastResult);
 }
@@ -665,6 +685,7 @@ function render(res) {
   $("cntWarn").textContent = verdict.counts.warn || 0;
   $("cntPass").textContent = verdict.counts.pass || 0;
 
+  $("lockedBanner").hidden = !verdict.locked;
   const showIds = $("showIds").value === "1";
   const body = $("resultsBody");
   body.innerHTML = "";
@@ -686,7 +707,7 @@ function render(res) {
       dot.className = "dot " + it.level;
       td1.appendChild(dot);
       td1.appendChild(document.createTextNode(tItem(it.id)));
-      const note = tNote(it.id, it.level);
+      const note = tNote(it.id, it.level) || (it.level === "skip" ? t("skipNote") : "");
       if (note) {
         const n = document.createElement("div");
         n.className = "note " + (it.level === "fail" ? "fail" : it.level === "warn" ? "warn" : "");
@@ -785,12 +806,16 @@ $("btnReplay").addEventListener("click", () => {
   buffer = text;
   $("logbox").textContent = text.slice(-40000);
   const report = parseConsole(text);
-  const verdict = evaluate(report, { profile: readProfile() });
+  const locked = !(report.flags && report.flags.passwordAccepted);
+  const verdict = evaluate(report, { profile: readProfile(), locked: locked });
   lastResult = { report, verdict };
   render(lastResult);
 });
 
 $("verLine").textContent = "v" + APP_VERSION + " · core: parse+evaluate · 9600 8N1";
+if (CFG.profile) {
+  $("profile").value = typeof CFG.profile === "string" ? CFG.profile : JSON.stringify(CFG.profile);
+}
 applyI18n();
 setChip(false);
 
