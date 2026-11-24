@@ -5,7 +5,7 @@ PASS / WARN / FAIL、分组明细和可复制的报告。客户只需要插线�
 
 - 变体：TSE NB（BC95-GV / OneNET）与 TSE LoRaWAN（Pixel/TrackCentral 侧），**自动识别**
 - 连接：CH340 用 WebUSB 直驱（手机 OTG / 台式机都能用）；Web Serial 作为桌面兜底
-- 判定：以设备控制台的真实输出为准，不猜；给了批次期望值就逐项比对
+- 判定：以设备控制台的真实输出为准，不猜；期望值可选（配置里给就从"结构性判定"升级为"逐项比对"）
 - 形态：纯前端单页，不联网、不上传日志
 
 ## 仓库
@@ -30,21 +30,21 @@ WebUSB 要求安全上下文：**HTTPS 或 localhost**。iOS 浏览器不支持 
 
 1. USB-TTL 的 **TXD → 板子 RX、RXD → 板子 TX、GND → GND**（交叉接）
 2. 板子右上角 3 针即调试串口（与客户远程配置用的是同一处，见 `lify-t/doc/for_client/instruction/NB-IoT_Configuration_Guide_Universal.docx`）
-3. 默认 **9600 8N1**；自动模式会先试 9600，没数据再试 115200
+3. 串口 **固定 9600 8N1**（不留波特率选项）
 
 ### 不接硬件也能验判定：回放模式
 
 页面最底下「回放模式」把已有日志粘进去（或导入 .txt），走同一套解析与判定。
 也可以直接在地址后面加 `?demo=1` 看内置的健康样本。
 
-## 配置：AT 密码与批次期望值
+## 配置：AT 密码
 
 设备固件把 AT 命令锁在密码后面（防止有人插线就改 Device ID / AuthInfo / 服务器地址）。
 密码属于**我们掌握的常量**，不出现在界面上：
 
 ```powershell
 Copy-Item config.local.example.js config.local.js   # 已 gitignore，不会提交
-# 编辑 config.local.js，填 atPassword（可选再填 profile 批次期望值）
+# 编辑 config.local.js，填 atPassword
 ```
 
 - `config.js`（已提交）：只有空默认值，`atPassword: ""`
@@ -79,9 +79,9 @@ Copy-Item config.local.example.js config.local.js   # 已 gitignore，不会提�
 ## 安全边界
 
 - **只发查询命令**：`isAllowedCommand()` 拒绝任何 `AT+X=值` 的写入；`AT+FDR / AT+DISAT / AT+SIMLOCK / AT+CICICLE / AT+CICANGLE` 等直接黑名单。剧本在 `buildPlanScript()` 里是常量，客户界面没有命令输入框。
-- **ATZ 是唯一"有动作"的命令**：只用于采集完整启动日志，高级面板里可以关掉。
+- **ATZ 固定执行**：诊断开始会重启设备一次（约 3 秒），用来拿完整启动块；界面上没有开关。
 - **不联网**：没有远程脚本、没有请求；判定在本地算。
-- **脱敏**：Device ID / AuthInfo / IMEI / ICCID 默认只显示尾号，高级面板可开全量。
+- **不脱敏**：Device ID / AuthInfo / IMEI / ICCID 全量显示——这套工具就是要让人把 log 直接复制发回来，藏起来没有意义。
 
 ## 目录
 
@@ -89,7 +89,7 @@ Copy-Item config.local.example.js config.local.js   # 已 gitignore，不会提�
 lifyt_device_diag/
 ├─ index.html                单页 UI + CH340/Web Serial 连接层
 ├─ core.js                   协议事实、剧本、解析、判定（无 DOM，node 可测）
-├─ config.js                 默认配置（空密码 / 期望值），可提交
+├─ config.js                 默认配置（空密码 / 可选期望值），可提交
 ├─ config.local.example.js   本地配置模板；复制成 config.local.js 填密码（不提交）
 ├─ docs/protocol-notes.md    设备控制台协议事实与来源、待真机确认项
 ├─ tests/replay.test.mjs     解析/判定/白名单断言（合成日志，无真实凭证）

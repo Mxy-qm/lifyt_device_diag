@@ -7,12 +7,11 @@
  *  3. 本文件不碰 DOM，浏览器与 node 测试共用。
  */
 
-export const APP_VERSION = "0.1.1-alpha";
+export const APP_VERSION = "0.1.2-alpha";
 
 /** 设备控制台协议事实 */
 export const PROTOCOL = {
   baudRate: 9600,
-  baudCandidates: [9600, 115200],
   lineEnding: "\r\n",
   unlockHint: "Enter Password to Active AT Commands",
 };

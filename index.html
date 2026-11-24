@@ -78,27 +78,6 @@
       <button id="btnDisconnect" class="ghost" data-i18n="disconnect" disabled>断开</button>
     </div>
     <div class="muted" style="margin-top:8px" id="hint" data-i18n="connectHint">手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点上面的按钮。</div>
-    <details style="margin-top:10px">
-      <summary data-i18n="advTitle">高级（内部使用）</summary>
-      <div class="adv" style="margin-top:10px">
-        <div>
-          <label for="baud" data-i18n="lblBaud">波特率</label>
-          <select id="baud"><option value="0">自动（9600 → 115200）</option><option value="9600">9600</option><option value="115200">115200</option></select>
-        </div>
-        <div>
-          <label for="reboot" data-i18n="lblReboot">重启采集完整启动信息（ATZ）</label>
-          <select id="reboot"><option value="1" data-i18n="optYes">是（推荐）</option><option value="0" data-i18n="optNo">否</option></select>
-        </div>
-        <div>
-          <label for="showIds" data-i18n="lblShowIds">显示完整序列号</label>
-          <select id="showIds"><option value="0" data-i18n="optNo">否（脱敏）</option><option value="1" data-i18n="optYes">是</option></select>
-        </div>
-        <div style="grid-column:1/-1">
-          <label for="profile" data-i18n="lblProfile">批次期望值（JSON，可选；填了就按期望值比对）</label>
-          <textarea id="profile" placeholder='{"server":"1.2.3.4,5683","apn":"cmhk","cops":"45412","nband":"8","tdc":1800000,"stdc":1800000,"ctangle":10}'></textarea>
-        </div>
-      </div>
-    </details>
   </section>
 
   <section class="card">
@@ -160,7 +139,7 @@
 import {
   APP_VERSION, PROTOCOL, isAllowedCommand,
   buildProbeScript, buildPlanScript,
-  detectVariant, parseConsole, evaluate, maskValue
+  detectVariant, parseConsole, evaluate
 } from "./core.js";
 
 /* ---------------- i18n ---------------- */
@@ -168,10 +147,7 @@ const T = {
   zh: {
     brand:"设备诊断", notConnected:"未连接", connected:"已连接", connecting:"连接中…", noDevice:"没有选中设备",
     connectTitle:"第一步 · 连接设备", runCheck:"连接并诊断", disconnect:"断开",
-    connectHint:"手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点上面的按钮。",
-    advTitle:"高级（内部使用）", lblBaud:"波特率",
-    lblReboot:"重启采集完整启动信息（ATZ）", lblShowIds:"显示完整序列号",
-    lblProfile:"批次期望值（JSON，可选；填了就按期望值比对）", optYes:"是（推荐）", optNo:"否", optYes2:"是", optNo2:"否（脱敏）",
+    connectHint:"手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点上面的按钮。诊断开始时会重启设备一次（约 3 秒），用来采集完整启动信息。",
     idleVerdict:"等待诊断", idleSub:"连上设备后会自动跑完一套固定检查",
     bFail:"不通过", bWarn:"提示", bPass:"通过",
     resultsTitle:"检查结果", resultsEmpty:"还没有结果。",
@@ -188,11 +164,11 @@ const T = {
     subPass:"关键项全部正常", subWarn:"有需要留意的项，见下方明细",
     subFail:"有项目不合格，见下方明细",
     copied:"已复制", copyFail:"复制失败", noVerdict:"还没有可导出的结果。",
-    connecting2:"正在诊断，请别拔线…", emptyLog:"没有收到任何数据：检查接线（TX/RX 是否交叉）、波特率、设备是否上电。",
+    connecting2:"正在诊断，请别拔线…", emptyLog:"没有收到任何数据：检查接线（TX/RX 是否交叉）、设备是否上电。",
     group:{identity:"系统信息",identityVals:"设备标识",config:"参数配置",power:"电源",sensor:"传感器",time:"时间与重启",network:"网络",log:"日志检查"},
     item:{"v.detect":"设备识别","v.firmware":"固件版本","id.deviceId":"设备 ID","id.authInfo":"AuthInfo","id.productId":"产品 ID","id.devEui":"DevEUI","cfg.server":"服务器地址","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"频段","cfg.intervals":"采集/上报间隔","cfg.ctangle":"角度阈值","cfg.ityp":"安装方式","pwr.battery":"电池电压","sen.angle":"当前角度","sen.icangle":"内部对比角","sen.alarmDiff":"角度偏差","time.rtc":"设备时间","time.rebootCause":"重启原因","net.csq":"信号 (CSQ)","net.cfun":"射频状态 (CFUN)","net.imei":"IMEI","net.iccid":"ICCID","net.join":"入网状态","net.rssi":"RSSI","log.password":"AT 解锁","log.errors":"错误行"},
     note:{
-      "v.detect.fail":"没有识别到设备型号，检查接线与波特率。",
+      "v.detect.fail":"没有识别到设备型号，检查接线（TX/RX 是否交叉）。",
       "v.firmware.warn":"没读到固件版本号。",
       "id.deviceId.fail":"设备 ID 缺失或还是出厂默认值，需要写入。",
       "id.authInfo.fail":"AuthInfo 缺失或还是出厂默认值，需要写入。",
@@ -224,10 +200,7 @@ const T = {
   zhHant: {
     brand:"設備診斷", notConnected:"未連線", connected:"已連線", connecting:"連線中…", noDevice:"沒有選中裝置",
     connectTitle:"第一步 · 連線裝置", runCheck:"連線並診斷", disconnect:"中斷",
-    connectHint:"手機/電腦用 USB-TTL 接裝置右上角 3 針（TXD/RXD/GND），插上後點上面的按鈕。",
-    advTitle:"進階（內部使用）", lblBaud:"鮑率",
-    lblReboot:"重啟採集完整開機資訊（ATZ）", lblShowIds:"顯示完整序號",
-    lblProfile:"批次期望值（JSON，可選；填了就按期望值比對）", optYes:"是（建議）", optNo:"否", optYes2:"是", optNo2:"否（去識別）",
+    connectHint:"手機/電腦用 USB-TTL 接裝置右上角 3 針（TXD/RXD/GND），插上後點上面的按鈕。診斷開始時會重啟裝置一次（約 3 秒），用來採集完整開機資訊。",
     idleVerdict:"等待診斷", idleSub:"連上裝置後會自動跑完一套固定檢查",
     bFail:"不通過", bWarn:"提示", bPass:"通過",
     resultsTitle:"檢查結果", resultsEmpty:"還沒有結果。",
@@ -243,11 +216,11 @@ const T = {
     vPass:"診斷通過", vWarn:"通過，有提示", vFail:"未通過",
     subPass:"關鍵項全部正常", subWarn:"有需要留意的項，見下方明細", subFail:"有項目不合格，見下方明細",
     copied:"已複製", copyFail:"複製失敗", noVerdict:"還沒有可匯出的結果。",
-    connecting2:"正在診斷，請別拔線…", emptyLog:"沒有收到任何資料：檢查接線（TX/RX 是否交叉）、鮑率、裝置是否上電。",
+    connecting2:"正在診斷，請別拔線…", emptyLog:"沒有收到任何資料：檢查接線（TX/RX 是否交叉）、裝置是否上電。",
     group:{identity:"系統資訊",identityVals:"裝置識別",config:"參數設定",power:"電源",sensor:"感測器",time:"時間與重啟",network:"網路",log:"日誌檢查"},
     item:{"v.detect":"裝置識別","v.firmware":"韌體版本","id.deviceId":"裝置 ID","id.authInfo":"AuthInfo","id.productId":"產品 ID","id.devEui":"DevEUI","cfg.server":"伺服器位址","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"頻段","cfg.intervals":"採集/上報間隔","cfg.ctangle":"角度閾值","cfg.ityp":"安裝方式","pwr.battery":"電池電壓","sen.angle":"目前角度","sen.icangle":"內部比對角","sen.alarmDiff":"角度偏差","time.rtc":"裝置時間","time.rebootCause":"重啟原因","net.csq":"訊號 (CSQ)","net.cfun":"射頻狀態 (CFUN)","net.imei":"IMEI","net.iccid":"ICCID","net.join":"入網狀態","net.rssi":"RSSI","log.password":"AT 解鎖","log.errors":"錯誤行"},
     note:{
-      "v.detect.fail":"沒有識別到裝置型號，檢查接線與鮑率。",
+      "v.detect.fail":"沒有識別到裝置型號，檢查接線（TX/RX 是否交叉）。",
       "v.firmware.warn":"沒讀到韌體版本。",
       "id.deviceId.fail":"裝置 ID 缺少或仍是出廠預設值，需要寫入。",
       "id.authInfo.fail":"AuthInfo 缺少或仍是出廠預設值，需要寫入。",
@@ -279,10 +252,7 @@ const T = {
   en: {
     brand:"Device Diagnostics", notConnected:"Disconnected", connected:"Connected", connecting:"Connecting…", noDevice:"No device selected",
     connectTitle:"Step 1 · Connect", runCheck:"Connect & check", disconnect:"Disconnect",
-    connectHint:"Wire USB-TTL to the 3 pins at the top-right of the board (TXD/RXD/GND), plug in, then press the button.",
-    advTitle:"Advanced (internal)", lblBaud:"Baud rate",
-    lblReboot:"Reboot to capture full boot log (ATZ)", lblShowIds:"Show full serial numbers",
-    lblProfile:"Batch expectations (JSON, optional)", optYes:"Yes (recommended)", optNo:"No", optYes2:"Yes", optNo2:"No (masked)",
+    connectHint:"Wire USB-TTL to the 3 pins at the top-right of the board (TXD/RXD/GND), plug in, then press the button. The check reboots the device once (~3 s) to capture the full boot log.",
     idleVerdict:"Waiting", idleSub:"A fixed check runs automatically once connected",
     bFail:"Failed", bWarn:"Warnings", bPass:"Passed",
     resultsTitle:"Results", resultsEmpty:"No result yet.",
@@ -298,11 +268,11 @@ const T = {
     vPass:"Check passed", vWarn:"Passed with warnings", vFail:"Check failed",
     subPass:"All key items normal", subWarn:"Some items need attention — see details below", subFail:"Some items failed — see details below",
     copied:"Copied", copyFail:"Copy failed", noVerdict:"Nothing to export yet.",
-    connecting2:"Running the check — keep the cable plugged in…", emptyLog:"No data received: check wiring (TX/RX crossed), baud rate, device power.",
+    connecting2:"Running the check — keep the cable plugged in…", emptyLog:"No data received: check wiring (TX/RX crossed), device power.",
     group:{identity:"System",identityVals:"Identity",config:"Configuration",power:"Power",sensor:"Sensor",time:"Time & reboot",network:"Network",log:"Log"},
     item:{"v.detect":"Device","v.firmware":"Firmware","id.deviceId":"Device ID","id.authInfo":"AuthInfo","id.productId":"Product ID","id.devEui":"DevEUI","cfg.server":"Server","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"Band","cfg.intervals":"Collect/report interval","cfg.ctangle":"Angle threshold","cfg.ityp":"Mounting","pwr.battery":"Battery","sen.angle":"Current angle","sen.icangle":"Reference angle","sen.alarmDiff":"Angle delta","time.rtc":"Device time","time.rebootCause":"Reboot cause","net.csq":"Signal (CSQ)","net.cfun":"RF state (CFUN)","net.imei":"IMEI","net.iccid":"ICCID","net.join":"Join state","net.rssi":"RSSI","log.password":"AT unlock","log.errors":"Error lines"},
     note:{
-      "v.detect.fail":"Device model not detected — check wiring and baud rate.",
+      "v.detect.fail":"Device model not detected — check the wiring (TX/RX crossed).",
       "v.firmware.warn":"Firmware version missing.",
       "id.deviceId.fail":"Device ID missing or still factory default.",
       "id.authInfo.fail":"AuthInfo missing or still factory default.",
@@ -372,12 +342,6 @@ function applyI18n() {
     const k = el.getAttribute("data-i18n-placeholder");
     el.placeholder = (T[lang] && T[lang][k]) || T.en[k] || "";
   });
-  const opts = $("reboot").querySelectorAll("option");
-  opts[0].textContent = t("optYes");
-  opts[1].textContent = t("optNo");
-  const s2 = $("showIds").querySelectorAll("option");
-  s2[0].textContent = t("optNo2");
-  s2[1].textContent = t("optYes2");
   setChip(connected);
   if (lastResult) render(lastResult);
 }
@@ -616,37 +580,24 @@ async function runCheck() {
   buffer = ""; lineBuf = ""; lastResult = null;
   $("logbox").textContent = "";
   const password = AT_PASSWORD;
-  const reboot = $("reboot").value === "1";
-  const baudPref = Number($("baud").value || 0);
-  const bauds = baudPref ? [baudPref] : PROTOCOL.baudCandidates;
   try {
     setChip(false, true);
     const adapter = await requestAdapter();
     port = adapter.port;
-    for (const baud of bauds) {
-      await openPort(adapter, baud);
-      if (adapter.kind === "serial") {
-        writer = port.writable.getWriter();
-      } else {
-        writer = port.writable.getWriter();
-      }
-      pipeRead(port);
-      connected = true;
-      setChip(true);
-      $("btnDisconnect").disabled = false;
-      logLine("[sys] 已连接 @" + baud);
-      await runSteps([{ kind: "send", line: "", waitMs: 600 }]);
-      if (buffer.replace(/→.*/g, "").trim().length > 0) break;
-      // 9600 没反应 → 换波特率重试
-      if (baud === bauds[bauds.length - 1]) break;
-      await teardown();
-      port = adapter.port;
-    }
+    await openPort(adapter, PROTOCOL.baudRate);
+    writer = port.writable.getWriter();
+    pipeRead(port);
+    connected = true;
+    setChip(true);
+    $("btnDisconnect").disabled = false;
+    logLine("[sys] 已连接 @" + PROTOCOL.baudRate);
+    await runSteps([{ kind: "send", line: "", waitMs: 600 }]);
     const probe = buildProbeScript({ password: password });
     await runSteps(probe);
     const variant = detectVariant(buffer);
     logLine("[sys] 变体判定: " + variant);
-    const plan = buildPlanScript(variant === "unknown" ? "nb" : variant, { password: password, reboot: reboot });
+    // ATZ 固定执行：不重启就拿不到完整启动块，启动块是这套诊断里最全的一份证据
+    const plan = buildPlanScript(variant === "unknown" ? "nb" : variant, { password: password, reboot: true });
     await runSteps(plan);
     finalize();
   } catch (e) {
@@ -659,9 +610,10 @@ async function runCheck() {
 }
 
 function readProfile() {
-  const raw = $("profile").value.trim();
-  if (!raw) return {};
-  try { return JSON.parse(raw); } catch (e) { logLine("[warn] 期望值 JSON 解析失败：" + ((e && e.message) || e)); return {}; }
+  const p = CFG.profile;
+  if (!p) return {};
+  if (typeof p === "object") return p;
+  try { return JSON.parse(p); } catch (e) { logLine("[warn] 配置里的 profile 不是合法 JSON：" + ((e && e.message) || e)); return {}; }
 }
 
 function finalize() {
@@ -686,7 +638,6 @@ function render(res) {
   $("cntPass").textContent = verdict.counts.pass || 0;
 
   $("lockedBanner").hidden = !verdict.locked;
-  const showIds = $("showIds").value === "1";
   const body = $("resultsBody");
   body.innerHTML = "";
   for (const g of verdict.groups) {
@@ -716,8 +667,7 @@ function render(res) {
       }
       const td2 = document.createElement("td");
       td2.className = "v";
-      let val = it.value === null || it.value === undefined || it.value === "" ? "—" : String(it.value);
-      if (it.masked && !showIds) val = maskValue(it.value);
+      const val = it.value === null || it.value === undefined || it.value === "" ? "—" : String(it.value);
       td2.textContent = val + (it.unit && it.value !== null ? " " + it.unit : "");
       const td3 = document.createElement("td");
       td3.className = "v";
@@ -813,9 +763,6 @@ $("btnReplay").addEventListener("click", () => {
 });
 
 $("verLine").textContent = "v" + APP_VERSION + " · core: parse+evaluate · 9600 8N1";
-if (CFG.profile) {
-  $("profile").value = typeof CFG.profile === "string" ? CFG.profile : JSON.stringify(CFG.profile);
-}
 applyI18n();
 setChip(false);
 

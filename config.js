@@ -4,6 +4,6 @@
 window.DC_CONFIG = {
   // 设备 AT 控制台密码；空字符串 = 只做免解锁的检查
   atPassword: "",
-  // 可选：批次期望值，等价于界面上那个 JSON 框（对象或 JSON 字符串）
+  // 可选：批次期望值（对象或 JSON 字符串）。界面上没有输入框，只能从这里给
   profile: null
 };
