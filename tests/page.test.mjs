@@ -47,7 +47,7 @@ test("脚本引用的 DOM id 都存在于页面", () => {
 });
 
 test("页面里没有留远程脚本/外链依赖", () => {
-  // 允许同源相对脚本（config.js / config.local.js），不允许任何 http(s):// 或 // 开头的脚本
+  // 允许同源相对脚本（config.js），不允许任何 http(s):// 或 // 开头的脚本
   assert.ok(!/<script[^>]+src="(?:https?:)?\/\//i.test(html), "不应有远程脚本");
   assert.ok(!/https?:\/\/(?!127\.0\.0\.1)/.test(html.replace(/<a [^>]*>/g, "")), "不应引用外部地址");
 });

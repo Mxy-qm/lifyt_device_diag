@@ -37,34 +37,18 @@ WebUSB 要求安全上下文：**HTTPS 或 localhost**。iOS 浏览器不支持 
 页面最底下「回放模式」把已有日志粘进去（或导入 .txt），走同一套解析与判定。
 也可以直接在地址后面加 `?demo=1` 看内置的健康样本。
 
-## 密码与公开仓库（alpha 临时做法）
+## 配置：AT 密码
 
-本仓库现在是 **public**，alpha 阶段直接把 AT 密码写在 [config.js](config.js) 里提交：
+设备固件把 AT 命令锁在密码后面。密码写在 [config.js](config.js)，页面里不显示、也不写进日志：
 
 ```js
-window.DC_CONFIG = { atPassword: "******", profile: null };
+window.DC_CONFIG = { atPassword: "83724", profile: null };
 ```
 
-- 为什么能接受：纯前端页面里的密码挡不住 F12，反正现场远程诊断时客户也能看到；提交只是省掉每次手输
-- **代价**：公开过的密码就等于泄露过——git 历史里那份会一直在，别人 fork/clone 也带走了
-- 所以：**改回 private 之前、或正式发客户之前，必须换一次设备 AT 密码**（改完只更新 config.js 并提交）
-- 发客户时更稳的做法是换 Cloudflare Pages + Access（邮箱白名单），仓库保持 public 也无所谓
-
-设备固件把 AT 命令锁在密码后面（防止有人插线就改 Device ID / AuthInfo / 服务器地址）。
-密码属于**我们掌握的常量**，不出现在界面上：
-
-```powershell
-Copy-Item config.local.example.js config.local.js   # 已 gitignore，不会提交
-# 编辑 config.local.js，填 atPassword
-```
-
-- `config.js`（已提交）：只有空默认值，`atPassword: ""`
-- `config.local.js`（不提交）：真实密码，页面加载时覆盖默认值
-- 留空也能跑：拿到的是设备上电自动打印的那一段（身份、配置、角度、对比角、重启原因、CSQ）
-- 拿不到的是"要问设备才说"的项：电池电压、IMEI/ICCID、采集/上报间隔、角度阈值、安装方式、CFUN/NBAND
-
-**没解锁时这些项一律标「未检查」，页面顶部会挂一条提示**——不会把"没读到"算成设备异常，
-也不会静默显示成通过。这是硬规则（见 AGENTS.md）。
+- 留空也能跑：只做设备上电就自动打印的那部分（身份、配置、角度、对比角、重启原因、CSQ）
+- 留空时"要问设备才说"的项（电池、IMEI/ICCID、间隔、阈值、安装方式、CFUN/NBAND）一律标
+  「未检查」，页面顶部挂一条提示——不会把"没读到"算成设备异常
+- `profile` 可选：填了按批次期望值逐项比对，不填只做结构性判定
 
 > 安全说明：纯前端页面里的密码挡不住会按 F12 的人，这里的目标只是不把密码摆在界面上、不写进日志。
 
