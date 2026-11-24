@@ -1,0 +1,11 @@
+TSE Device
+Image Version: TSE v2.5 260826
+Frequency Band: EU868
+Time: 21/1/29 00:12:03
+Angle
+Roll:1.20 Pitch:0.80
+Internal Comparison Angle
+Roll:-5.79 Pitch:-1.57
+DevEui= 00 00 00 00 00 00 00 00
+Enter Password to Active AT Commands
+Incorrect Password

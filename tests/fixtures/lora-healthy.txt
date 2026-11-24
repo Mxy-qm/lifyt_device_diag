@@ -1,0 +1,25 @@
+TSE Device
+Image Version: TSE v2.5 260826
+Frequency Band: EU868
+System reset
+LSI=35368Total Size= 119MFree Size= 118MTime: 26/9/9 10:14:00
+Angle
+Roll:-90.22 Pitch:102.38
+Internal Comparison Angle
+Roll:-90.10 Pitch:102.20
+DevEui= A0 10 00 03 00 10 22 91
+AppEui= 48 61 2A 92 1F A7 62 35
+Enter Password to Active AT Commands
+***** UpLinkCounter= 0 *****
+Correct Password
+AT+CFG
+AT+TDC=1800000
+AT+STDC=1800000
+AT+CTANGLE=10
+AT+ICANGLE=Roll:-90.10 Pitch:102.20
+AT+BAT=BAT voltage=3691mV
+AT+DATE=26/9/9 10:14:00
+OK
+AT+NJS=1
+AT+RSSI=-56
+AT+SNR=8

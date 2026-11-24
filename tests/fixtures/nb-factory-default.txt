@@ -1,0 +1,17 @@
+DRAGINO TSE NB Device
+Image Version: TSE NB v1.4 260826
+Time: 0/1/1 00:00:11
+Angle
+Roll=0.00 Pitch=0.00
+Internal Comparison Angle
+Roll:0.00 Pitch:0.00
+Device ID= 1234567890
+Product ID= 0000
+AuthInfo= 0000
+APN=
+COPS=
+Server IP & PORT= 0.0.0.0,0
+REBOOTING
+REBOOT_CAUSE_POWER_ON
+Correct Password
++CSQ:99,99

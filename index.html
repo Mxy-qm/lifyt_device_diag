@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LeafIoT 设备体检 · Device Check</title>
+<style>
+  :root{
+    --bg:#f2f7f3; --card:#fff; --ink:#16321f; --muted:#5f7a68; --line:#d9e6dd;
+    --brand:#2f7d5b; --brand-soft:#e3f3e9; --ok:#1f7a4d; --warn:#a96b00; --bad:#b3261e; --skip:#8a9a90;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",sans-serif}
+  header{position:sticky;top:0;z-index:5;background:rgba(255,255,255,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .brand{font-weight:700;color:var(--brand);letter-spacing:.2px}
+  .brand small{font-weight:500;color:var(--muted);margin-left:6px;font-size:.72rem}
+  .grow{flex:1}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:600;background:#fff}
+  .chip.on{background:var(--brand-soft);border-color:#b8ddc7;color:var(--ok)}
+  .chip.off{color:var(--bad);border-color:#f0c9c6;background:#fdf1f0}
+  select,button,input,textarea{font:inherit;color:inherit}
+  select{padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  main{max-width:940px;margin:0 auto;padding:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  h2{font-size:.95rem;margin:0 0 10px;color:var(--muted);font-weight:600;letter-spacing:.3px}
+  button{cursor:pointer;border:1px solid var(--brand);background:var(--brand);color:#fff;border-radius:10px;padding:9px 16px;font-weight:600}
+  button.ghost{background:#fff;color:var(--brand)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .verdict{border-radius:14px;padding:16px;color:#fff;display:flex;gap:14px;align-items:center}
+  .verdict .big{font-size:1.5rem;font-weight:800;line-height:1.15}
+  .verdict .sub{opacity:.92;font-size:.85rem}
+  .verdict.pass{background:linear-gradient(135deg,#1f7a4d,#2f9c67)}
+  .verdict.warn{background:linear-gradient(135deg,#a96b00,#c98a12)}
+  .verdict.fail{background:linear-gradient(135deg,#a3271f,#c4392f)}
+  .verdict.idle{background:linear-gradient(135deg,#4a5f52,#6a8073)}
+  .badge{background:rgba(255,255,255,.2);border-radius:10px;padding:6px 10px;font-size:.78rem;text-align:center;min-width:64px}
+  .badge b{display:block;font-size:1.1rem}
+  table{width:100%;border-collapse:collapse;font-size:.88rem}
+  td,th{padding:7px 6px;border-bottom:1px solid #eef4f0;text-align:left;vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:.76rem;text-transform:uppercase;letter-spacing:.4px}
+  td.v{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.84rem}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle}
+  .dot.pass{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.fail{background:var(--bad)} .dot.skip{background:var(--skip)}
+  .note{color:var(--muted);font-size:.8rem;margin-top:2px}
+  .note.warn{color:var(--warn)} .note.fail{color:var(--bad)}
+  details summary{cursor:pointer;color:var(--muted);font-weight:600;font-size:.88rem}
+  #logbox{white-space:pre-wrap;word-break:break-all;font-family:ui-monospace,Consolas,monospace;font-size:.76rem;background:#f7fbf8;border:1px solid var(--line);border-radius:10px;padding:10px;max-height:320px;overflow:auto;margin-top:8px}
+  .adv{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .adv label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:4px}
+  .adv input[type=text],.adv input[type=password],.adv input[type=number],.adv textarea,.adv select{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  textarea{min-height:90px;font-family:ui-monospace,Consolas,monospace;font-size:.78rem}
+  .muted{color:var(--muted);font-size:.82rem}
+  footer{max-width:940px;margin:0 auto;padding:0 14px 28px;color:var(--muted);font-size:.76rem}
+  .banner{border:1px dashed #e0c9a6;background:#fffaf0;color:#7a5a12;border-radius:10px;padding:8px 10px;font-size:.8rem;margin-bottom:10px}
+  @media(max-width:640px){.adv{grid-template-columns:1fr}.verdict .big{font-size:1.25rem}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">LeafIoT 设备体检<small>device-check</small></div>
+  <span class="grow"></span>
+  <span id="chip" class="chip off" data-i18n="notConnected">未连接</span>
+  <select id="lang" aria-label="language">
+    <option value="en">EN</option>
+    <option value="zh">简</option>
+    <option value="zhHant">繁</option>
+  </select>
+</header>
+
+<main>
+  <div class="banner" data-i18n="alphaBanner">Alpha 内测版：判定口径与文案可能变动，结论仅供内部参考。</div>
+
+  <section class="card">
+    <h2 data-i18n="connectTitle">第一步 · 连接设备</h2>
+    <div class="row">
+      <button id="btnRun" data-i18n="runCheck">连接并体检</button>
+      <button id="btnDisconnect" class="ghost" data-i18n="disconnect" disabled>断开</button>
+    </div>
+    <div class="muted" style="margin-top:8px" id="hint" data-i18n="connectHint">手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点上面的按钮。</div>
+    <details style="margin-top:10px">
+      <summary data-i18n="advTitle">高级（内部使用）</summary>
+      <div class="adv" style="margin-top:10px">
+        <div>
+          <label for="pw" data-i18n="lblPassword">AT 密码（留空则跳过解锁）</label>
+          <input id="pw" type="password" autocomplete="off" placeholder="••••••">
+        </div>
+        <div>
+          <label for="baud" data-i18n="lblBaud">波特率</label>
+          <select id="baud"><option value="0">自动（9600 → 115200）</option><option value="9600">9600</option><option value="115200">115200</option></select>
+        </div>
+        <div>
+          <label for="reboot" data-i18n="lblReboot">重启采集完整启动信息（ATZ）</label>
+          <select id="reboot"><option value="1" data-i18n="optYes">是（推荐）</option><option value="0" data-i18n="optNo">否</option></select>
+        </div>
+        <div>
+          <label for="showIds" data-i18n="lblShowIds">显示完整序列号</label>
+          <select id="showIds"><option value="0" data-i18n="optNo">否（脱敏）</option><option value="1" data-i18n="optYes">是</option></select>
+        </div>
+        <div style="grid-column:1/-1">
+          <label for="profile" data-i18n="lblProfile">批次期望值（JSON，可选；填了就按期望值比对）</label>
+          <textarea id="profile" placeholder='{"server":"1.2.3.4,5683","apn":"cmhk","cops":"45412","nband":"8","tdc":1800000,"stdc":1800000,"ctangle":10}'></textarea>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <section class="card">
+    <div id="verdict" class="verdict idle">
+      <div>
+        <div class="big" id="verdictText" data-i18n="idleVerdict">等待体检</div>
+        <div class="sub" id="verdictSub" data-i18n="idleSub">连上设备后会自动跑完一套固定检查</div>
+      </div>
+      <span class="grow"></span>
+      <div class="badge"><b id="cntFail">0</b><span data-i18n="bFail">不通过</span></div>
+      <div class="badge"><b id="cntWarn">0</b><span data-i18n="bWarn">提示</span></div>
+      <div class="badge"><b id="cntPass">0</b><span data-i18n="bPass">通过</span></div>
+    </div>
+  </section>
+
+  <section class="card" id="results">
+    <h2 data-i18n="resultsTitle">检查结果</h2>
+    <div id="resultsBody" class="muted" data-i18n="resultsEmpty">还没有结果。</div>
+    <div class="row" style="margin-top:12px">
+      <button id="btnCopy" class="ghost" data-i18n="copyReport" disabled>复制报告</button>
+      <button id="btnDownload" class="ghost" data-i18n="downloadReport" disabled>下载报告</button>
+    </div>
+  </section>
+
+  <details class="card">
+    <summary data-i18n="rawTitle">原始串口日志</summary>
+    <div class="row" style="margin-top:10px">
+      <button id="btnCopyLog" class="ghost" data-i18n="copyLog" disabled>复制日志</button>
+    </div>
+    <div id="logbox"></div>
+  </details>
+
+  <details class="card">
+    <summary data-i18n="replayTitle">回放模式（用已有日志验证判定）</summary>
+    <div class="muted" style="margin:8px 0" data-i18n="replayHint">把设备日志粘进来，或用文件导入，走同一套解析与判定，不需要连硬件。</div>
+    <input id="replayFile" type="file" accept=".txt,.log,.md">
+    <textarea id="replayText" data-i18n-placeholder="replayPlaceholder" placeholder="粘贴设备串口日志…"></textarea>
+    <div class="row" style="margin-top:8px">
+      <button id="btnReplay" class="ghost" data-i18n="runReplay">用这段日志体检</button>
+    </div>
+  </details>
+</main>
+
+<footer>
+  <div id="verLine"></div>
+  <div data-i18n="footerNote">纯前端单页：不联网、不上传日志。判定规则见 docs/protocol-notes.md。</div>
+</footer>
+
+<script type="module">
+import {
+  APP_VERSION, PROTOCOL, isAllowedCommand,
+  buildProbeScript, buildPlanScript,
+  detectVariant, parseConsole, evaluate, maskValue
+} from "./core.js";
+
+/* ---------------- i18n ---------------- */
+const T = {
+  zh: {
+    notConnected:"未连接", connected:"已连接", connecting:"连接中…", noDevice:"没有选中设备",
+    connectTitle:"第一步 · 连接设备", runCheck:"连接并体检", disconnect:"断开",
+    connectHint:"手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点上面的按钮。",
+    advTitle:"高级（内部使用）", lblPassword:"AT 密码（留空则跳过解锁）", lblBaud:"波特率",
+    lblReboot:"重启采集完整启动信息（ATZ）", lblShowIds:"显示完整序列号",
+    lblProfile:"批次期望值（JSON，可选；填了就按期望值比对）", optYes:"是（推荐）", optNo:"否", optYes2:"是", optNo2:"否（脱敏）",
+    idleVerdict:"等待体检", idleSub:"连上设备后会自动跑完一套固定检查",
+    bFail:"不通过", bWarn:"提示", bPass:"通过",
+    resultsTitle:"检查结果", resultsEmpty:"还没有结果。",
+    copyReport:"复制报告", downloadReport:"下载报告", copyLog:"复制日志",
+    rawTitle:"原始串口日志", replayTitle:"回放模式（用已有日志验证判定）",
+    replayHint:"把设备日志粘进来，或用文件导入，走同一套解析与判定，不需要连硬件。",
+    replayPlaceholder:"粘贴设备串口日志…", runReplay:"用这段日志体检",
+    footerNote:"纯前端单页：不联网、不上传日志。判定规则见 docs/protocol-notes.md。",
+    alphaBanner:"Alpha 内测版：判定口径与文案可能变动，结论仅供内部参考。",
+    vPass:"体检通过", vWarn:"通过，有提示", vFail:"未通过",
+    subPass:"关键项全部正常", subWarn:"有需要留意的项，见下方明细",
+    subFail:"有项目不合格，见下方明细",
+    copied:"已复制", copyFail:"复制失败", noVerdict:"还没有可导出的结果。",
+    connecting2:"正在体检，请别拔线…", emptyLog:"没有收到任何数据：检查接线（TX/RX 是否交叉）、波特率、设备是否上电。",
+    group:{identity:"系统信息",identityVals:"设备标识",config:"参数配置",power:"电源",sensor:"传感器",time:"时间与重启",network:"网络",log:"日志检查"},
+    item:{"v.detect":"设备识别","v.firmware":"固件版本","id.deviceId":"设备 ID","id.authInfo":"AuthInfo","id.productId":"产品 ID","id.devEui":"DevEUI","cfg.server":"服务器地址","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"频段","cfg.intervals":"采集/上报间隔","cfg.ctangle":"角度阈值","cfg.ityp":"安装方式","pwr.battery":"电池电压","sen.angle":"当前角度","sen.icangle":"内部对比角","sen.alarmDiff":"角度偏差","time.rtc":"设备时间","time.rebootCause":"重启原因","net.csq":"信号 (CSQ)","net.cfun":"射频状态 (CFUN)","net.imei":"IMEI","net.iccid":"ICCID","net.join":"入网状态","net.rssi":"RSSI","log.password":"AT 解锁","log.errors":"错误行"},
+    note:{
+      "v.detect.fail":"没有识别到设备型号，检查接线与波特率。",
+      "v.firmware.warn":"没读到固件版本号。",
+      "id.deviceId.fail":"设备 ID 缺失或还是出厂默认值，需要写入。",
+      "id.authInfo.fail":"AuthInfo 缺失或还是出厂默认值，需要写入。",
+      "id.productId.fail":"产品 ID 缺失，需要写入。",
+      "id.productId.warn":"产品 ID 还是 0000。",
+      "id.devEui.fail":"DevEUI 缺失或全 0。",
+      "cfg.server.fail":"服务器地址缺失或还是出厂默认 0.0.0.0,0。",
+      "cfg.apn.fail":"APN 为空。",
+      "cfg.cops.fail":"COPS 为空。",
+      "cfg.nband.warn":"没读到频段。",
+      "cfg.intervals.warn":"采集/上报间隔缺失，或不整除。",
+      "cfg.ctangle.warn":"没读到角度阈值。",
+      "cfg.ityp.warn":"没读到安装方式。",
+      "pwr.battery.fail":"电池电压过低，换电池后再测。",
+      "pwr.battery.warn":"电池电压偏低，建议安排更换。",
+      "sen.angle.fail":"角度读数疑似 IMU 无效值（Roll/Pitch 同时接近 180），传感器或接线异常。",
+      "sen.icangle.warn":"没读到内部对比角。",
+      "sen.alarmDiff.warn":"当前角度与对比角差超过阈值，现在上报会触发倾斜警报（安装完成后应重置对比角）。",
+      "time.rtc.warn":"设备时间没对上（未同步 RTC），不影响上报但会影响判断时间。",
+      "net.csq.warn":"设备未驻网或信号很差（99,99 或低位）。",
+      "net.cfun.fail":"射频已关闭（CFUN:0）。",
+      "net.join.warn":"LoRaWAN 尚未入网。",
+      "net.rssi.warn":"上一包的 RSSI 偏弱。",
+      "log.password.warn":"密码错误，后面的查询可能都拿不到数据。",
+      "log.errors.fail":"日志里出现 ERROR 行。",
+      "expected":"期望" , "value":"实测"
+    }
+  },
+  zhHant: {
+    notConnected:"未連線", connected:"已連線", connecting:"連線中…", noDevice:"沒有選中裝置",
+    connectTitle:"第一步 · 連線裝置", runCheck:"連線並體檢", disconnect:"中斷",
+    connectHint:"手機/電腦用 USB-TTL 接裝置右上角 3 針（TXD/RXD/GND），插上後點上面的按鈕。",
+    advTitle:"進階（內部使用）", lblPassword:"AT 密碼（留空則跳過解鎖）", lblBaud:"鮑率",
+    lblReboot:"重啟採集完整開機資訊（ATZ）", lblShowIds:"顯示完整序號",
+    lblProfile:"批次期望值（JSON，可選；填了就按期望值比對）", optYes:"是（建議）", optNo:"否", optYes2:"是", optNo2:"否（去識別）",
+    idleVerdict:"等待體檢", idleSub:"連上裝置後會自動跑完一套固定檢查",
+    bFail:"不通過", bWarn:"提示", bPass:"通過",
+    resultsTitle:"檢查結果", resultsEmpty:"還沒有結果。",
+    copyReport:"複製報告", downloadReport:"下載報告", copyLog:"複製日誌",
+    rawTitle:"原始序列埠日誌", replayTitle:"回放模式（用既有日誌驗證判定）",
+    replayHint:"把裝置日誌貼進來，或用檔案匯入，走同一套解析與判定，不需要連硬體。",
+    replayPlaceholder:"貼上裝置序列埠日誌…", runReplay:"用這段日誌體檢",
+    footerNote:"純前端單頁：不連網、不上傳日誌。判定規則見 docs/protocol-notes.md。",
+    alphaBanner:"Alpha 內測版：判定口徑與文案可能變動，結論僅供內部參考。",
+    vPass:"體檢通過", vWarn:"通過，有提示", vFail:"未通過",
+    subPass:"關鍵項全部正常", subWarn:"有需要留意的項，見下方明細", subFail:"有項目不合格，見下方明細",
+    copied:"已複製", copyFail:"複製失敗", noVerdict:"還沒有可匯出的結果。",
+    connecting2:"正在體檢，請別拔線…", emptyLog:"沒有收到任何資料：檢查接線（TX/RX 是否交叉）、鮑率、裝置是否上電。",
+    group:{identity:"系統資訊",identityVals:"裝置識別",config:"參數設定",power:"電源",sensor:"感測器",time:"時間與重啟",network:"網路",log:"日誌檢查"},
+    item:{"v.detect":"裝置識別","v.firmware":"韌體版本","id.deviceId":"裝置 ID","id.authInfo":"AuthInfo","id.productId":"產品 ID","id.devEui":"DevEUI","cfg.server":"伺服器位址","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"頻段","cfg.intervals":"採集/上報間隔","cfg.ctangle":"角度閾值","cfg.ityp":"安裝方式","pwr.battery":"電池電壓","sen.angle":"目前角度","sen.icangle":"內部比對角","sen.alarmDiff":"角度偏差","time.rtc":"裝置時間","time.rebootCause":"重啟原因","net.csq":"訊號 (CSQ)","net.cfun":"射頻狀態 (CFUN)","net.imei":"IMEI","net.iccid":"ICCID","net.join":"入網狀態","net.rssi":"RSSI","log.password":"AT 解鎖","log.errors":"錯誤行"},
+    note:{
+      "v.detect.fail":"沒有識別到裝置型號，檢查接線與鮑率。",
+      "v.firmware.warn":"沒讀到韌體版本。",
+      "id.deviceId.fail":"裝置 ID 缺少或仍是出廠預設值，需要寫入。",
+      "id.authInfo.fail":"AuthInfo 缺少或仍是出廠預設值，需要寫入。",
+      "id.productId.fail":"產品 ID 缺少，需要寫入。",
+      "id.productId.warn":"產品 ID 仍是 0000。",
+      "id.devEui.fail":"DevEUI 缺少或全為 0。",
+      "cfg.server.fail":"伺服器位址缺少或仍是出廠預設 0.0.0.0,0。",
+      "cfg.apn.fail":"APN 為空。",
+      "cfg.cops.fail":"COPS 為空。",
+      "cfg.nband.warn":"沒讀到頻段。",
+      "cfg.intervals.warn":"採集/上報間隔缺少，或無法整除。",
+      "cfg.ctangle.warn":"沒讀到角度閾值。",
+      "cfg.ityp.warn":"沒讀到安裝方式。",
+      "pwr.battery.fail":"電池電壓過低，換電池後再測。",
+      "pwr.battery.warn":"電池電壓偏低，建議安排更換。",
+      "sen.angle.fail":"角度讀值疑似 IMU 無效值（Roll/Pitch 同時接近 180），感測器或接線異常。",
+      "sen.icangle.warn":"沒讀到內部比對角。",
+      "sen.alarmDiff.warn":"目前角度與比對角差超過閾值，現在上報會觸發傾斜警報（安裝完成後應重置比對角）。",
+      "time.rtc.warn":"裝置時間沒對上（未同步 RTC），不影響上報但會影響判斷時間。",
+      "net.csq.warn":"裝置未駐網或訊號很差（99,99 或低位）。",
+      "net.cfun.fail":"射頻已關閉（CFUN:0）。",
+      "net.join.warn":"LoRaWAN 尚未入網。",
+      "net.rssi.warn":"上一包的 RSSI 偏弱。",
+      "log.password.warn":"密碼錯誤，後面的查詢可能都拿不到資料。",
+      "log.errors.fail":"日誌裡出現 ERROR 行。",
+      "expected":"期望", "value":"實測"
+    }
+  },
+  en: {
+    notConnected:"Disconnected", connected:"Connected", connecting:"Connecting…", noDevice:"No device selected",
+    connectTitle:"Step 1 · Connect", runCheck:"Connect & check", disconnect:"Disconnect",
+    connectHint:"Wire USB-TTL to the 3 pins at the top-right of the board (TXD/RXD/GND), plug in, then press the button.",
+    advTitle:"Advanced (internal)", lblPassword:"AT password (blank = skip unlock)", lblBaud:"Baud rate",
+    lblReboot:"Reboot to capture full boot log (ATZ)", lblShowIds:"Show full serial numbers",
+    lblProfile:"Batch expectations (JSON, optional)", optYes:"Yes (recommended)", optNo:"No", optYes2:"Yes", optNo2:"No (masked)",
+    idleVerdict:"Waiting", idleSub:"A fixed check runs automatically once connected",
+    bFail:"Failed", bWarn:"Warnings", bPass:"Passed",
+    resultsTitle:"Results", resultsEmpty:"No result yet.",
+    copyReport:"Copy report", downloadReport:"Download report", copyLog:"Copy log",
+    rawTitle:"Raw serial log", replayTitle:"Replay mode (validate with a saved log)",
+    replayHint:"Paste a device log or import a file; same parser and rules, no hardware needed.",
+    replayPlaceholder:"Paste device serial log…", runReplay:"Check this log",
+    footerNote:"Single-page frontend: no network, no uploads. Rule notes in docs/protocol-notes.md.",
+    alphaBanner:"Alpha: wording and thresholds may change; for internal use.",
+    vPass:"Check passed", vWarn:"Passed with warnings", vFail:"Check failed",
+    subPass:"All key items normal", subWarn:"Some items need attention — see details below", subFail:"Some items failed — see details below",
+    copied:"Copied", copyFail:"Copy failed", noVerdict:"Nothing to export yet.",
+    connecting2:"Running the check — keep the cable plugged in…", emptyLog:"No data received: check wiring (TX/RX crossed), baud rate, device power.",
+    group:{identity:"System",identityVals:"Identity",config:"Configuration",power:"Power",sensor:"Sensor",time:"Time & reboot",network:"Network",log:"Log"},
+    item:{"v.detect":"Device","v.firmware":"Firmware","id.deviceId":"Device ID","id.authInfo":"AuthInfo","id.productId":"Product ID","id.devEui":"DevEUI","cfg.server":"Server","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"Band","cfg.intervals":"Collect/report interval","cfg.ctangle":"Angle threshold","cfg.ityp":"Mounting","pwr.battery":"Battery","sen.angle":"Current angle","sen.icangle":"Reference angle","sen.alarmDiff":"Angle delta","time.rtc":"Device time","time.rebootCause":"Reboot cause","net.csq":"Signal (CSQ)","net.cfun":"RF state (CFUN)","net.imei":"IMEI","net.iccid":"ICCID","net.join":"Join state","net.rssi":"RSSI","log.password":"AT unlock","log.errors":"Error lines"},
+    note:{
+      "v.detect.fail":"Device model not detected — check wiring and baud rate.",
+      "v.firmware.warn":"Firmware version missing.",
+      "id.deviceId.fail":"Device ID missing or still factory default.",
+      "id.authInfo.fail":"AuthInfo missing or still factory default.",
+      "id.productId.fail":"Product ID missing.",
+      "id.productId.warn":"Product ID still 0000.",
+      "id.devEui.fail":"DevEUI missing or all zeros.",
+      "cfg.server.fail":"Server missing or still factory default 0.0.0.0,0.",
+      "cfg.apn.fail":"APN empty.",
+      "cfg.cops.fail":"COPS empty.",
+      "cfg.nband.warn":"Band not read.",
+      "cfg.intervals.warn":"Collect/report interval missing or not divisible.",
+      "cfg.ctangle.warn":"Angle threshold not read.",
+      "cfg.ityp.warn":"Mounting type not read.",
+      "pwr.battery.fail":"Battery voltage too low — replace before deployment.",
+      "pwr.battery.warn":"Battery voltage low — plan a replacement.",
+      "sen.angle.fail":"Angle looks like an IMU sentinel value (Roll/Pitch both near 180) — sensor or wiring fault.",
+      "sen.icangle.warn":"Reference angle not read.",
+      "sen.alarmDiff.warn":"Current angle differs from the reference by more than the threshold — an uplink now would raise a tilt alarm. Reset the reference after installation.",
+      "time.rtc.warn":"Device clock is not set — harmless for reporting but confusing for timing.",
+      "net.csq.warn":"Not attached or very weak signal (99,99 or low).",
+      "net.cfun.fail":"RF disabled (CFUN:0).",
+      "net.join.warn":"LoRaWAN not joined.",
+      "net.rssi.warn":"Last packet RSSI is weak.",
+      "log.password.warn":"Wrong password — later queries may return nothing.",
+      "log.errors.fail":"ERROR line present in the log.",
+      "expected":"expected", "value":"actual"
+    }
+  }
+};
+
+/* ---------------- state & helpers ---------------- */
+const $ = (id) => document.getElementById(id);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let lang = localStorage.getItem("dc.lang") || "en";
+let port = null, writer = null, reader = null;
+let connected = false, buffer = "", lineBuf = "", busy = false, lastResult = null;
+
+function t(key) {
+  const pack = T[lang] || T.en;
+  return pack[key] !== undefined ? pack[key] : (T.en[key] !== undefined ? T.en[key] : key);
+}
+function tItem(id) {
+  const pack = T[lang] || T.en;
+  return (pack.item && pack.item[id]) || id;
+}
+function tGroup(id) {
+  const pack = T[lang] || T.en;
+  return (pack.group && pack.group[id]) || id;
+}
+function tNote(id, level) {
+  const pack = T[lang] || T.en;
+  return (pack.note && pack.note[id + "." + level]) || "";
+}
+
+function applyI18n() {
+  document.documentElement.lang = lang === "zh" ? "zh-Hans" : lang === "zhHant" ? "zh-Hant" : "en";
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const k = el.getAttribute("data-i18n");
+    if (T[lang] && T[lang][k] !== undefined) el.textContent = T[lang][k];
+    else if (T.en[k] !== undefined) el.textContent = T.en[k];
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const k = el.getAttribute("data-i18n-placeholder");
+    el.placeholder = (T[lang] && T[lang][k]) || T.en[k] || "";
+  });
+  const opts = $("reboot").querySelectorAll("option");
+  opts[0].textContent = t("optYes");
+  opts[1].textContent = t("optNo");
+  const s2 = $("showIds").querySelectorAll("option");
+  s2[0].textContent = t("optNo2");
+  s2[1].textContent = t("optYes2");
+  setChip(connected);
+  if (lastResult) render(lastResult);
+}
+
+function setChip(on, pending) {
+  const chip = $("chip");
+  chip.classList.toggle("on", !!on);
+  chip.classList.toggle("off", !on);
+  chip.textContent = pending ? t("connecting") : on ? t("connected") : t("notConnected");
+}
+
+function logLine(s) {
+  buffer += s + "\r\n";
+  const box = $("logbox");
+  box.textContent = buffer.length > 40000 ? buffer.slice(-40000) : buffer;
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ---------------- CH340 over WebUSB ---------------- */
+const WCH_VID = 0x1a86, CH343_PID = 0x55d3;
+const CH341_BAUDBASE_FACTOR = 1532620800, CH341_BAUDBASE_DIVMAX = 3;
+const CH340_INIT = 0xa1, CH340_SET_BAUDRATE = 0x9a, CH340_SET_HANDSHAKE = 0xa4;
+const VENDOR_CLASS = 0xff, MAX_TRANSFER_SIZE = 64;
+
+function assertTransferOk(result, action) {
+  if (result.status !== "ok") throw new Error("CH340 " + action + " failed: " + result.status);
+}
+
+class WebUSBSerialPort {
+  constructor(usbDevice) {
+    this.usbDevice = usbDevice; this.readable = null; this.writable = null;
+    this.interfaceNumber = null; this.endpointIn = null; this.endpointOut = null;
+    this.currentDtr = false; this.currentRts = false;
+    this.controlQueue = Promise.resolve(); this.readLoopRunning = false;
+  }
+  getInfo() { return { usbVendorId: this.usbDevice.vendorId, usbProductId: this.usbDevice.productId }; }
+  async open(options) {
+    const baudRate = (options && options.baudRate) || 9600;
+    if (this.usbDevice.opened) await this.close();
+    await this.usbDevice.open();
+    if (!this.usbDevice.configuration || this.usbDevice.configuration.configurationValue !== 1) {
+      await this.usbDevice.selectConfiguration(1);
+    }
+    this.claimBulkInterface();
+    if (this.interfaceNumber === null || this.endpointIn === null || this.endpointOut === null) {
+      throw new Error("No CH340 vendor bulk IN/OUT interface found");
+    }
+    try { await this.usbDevice.claimInterface(this.interfaceNumber); }
+    catch (e) { throw new Error("Unable to claim the CH340 USB interface. " + e); }
+    await this.vendorOut(CH340_INIT, 0, 0);
+    await this.setBaudRate(baudRate);
+    await this.setSignals({ dataTerminalReady: false, requestToSend: false });
+    this.createStreams();
+  }
+  async setBaudRate(baudRate) {
+    let factor = Math.floor(CH341_BAUDBASE_FACTOR / baudRate);
+    let divisor = CH341_BAUDBASE_DIVMAX;
+    while (factor > 0xfff0 && divisor > 0) { factor >>= 3; divisor--; }
+    if (factor > 0xfff0) throw new Error("Baudrate " + baudRate + " is not supported by CH340");
+    factor = 0x10000 - factor;
+    await this.vendorOut(CH340_SET_BAUDRATE, 0x1312, (factor & 0xff00) | divisor);
+    await this.vendorOut(CH340_SET_BAUDRATE, 0x0f2c, factor & 0xff);
+    await sleep(50);
+  }
+  async setSignals(signals) {
+    if (signals.dataTerminalReady !== undefined) this.currentDtr = signals.dataTerminalReady;
+    if (signals.requestToSend !== undefined) this.currentRts = signals.requestToSend;
+    const value = ~((this.currentDtr ? 1 << 5 : 0) | (this.currentRts ? 1 << 6 : 0)) & 0xffff;
+    await this.vendorOut(CH340_SET_HANDSHAKE, value, 0);
+  }
+  async close() {
+    this.readLoopRunning = false; this.readable = null; this.writable = null;
+    if (this.usbDevice.opened) {
+      if (this.interfaceNumber !== null) { try { await this.usbDevice.releaseInterface(this.interfaceNumber); } catch (e) {} }
+      await this.usbDevice.close();
+    }
+    this.interfaceNumber = null; this.endpointIn = null; this.endpointOut = null;
+  }
+  claimBulkInterface() {
+    const config = this.usbDevice.configuration;
+    if (!config) throw new Error("USB device has no configuration");
+    for (const iface of config.interfaces) {
+      for (const alt of iface.alternates) {
+        if (alt.interfaceClass !== VENDOR_CLASS) continue;
+        let inEp = null, outEp = null;
+        for (const ep of alt.endpoints) {
+          if (ep.type === "bulk" && ep.direction === "in") inEp = ep.endpointNumber;
+          else if (ep.type === "bulk" && ep.direction === "out") outEp = ep.endpointNumber;
+        }
+        if (inEp !== null && outEp !== null) { this.interfaceNumber = iface.interfaceNumber; this.endpointIn = inEp; this.endpointOut = outEp; return; }
+      }
+    }
+  }
+  async vendorOut(request, value, index) {
+    const self = this;
+    const run = this.controlQueue.then(async () => {
+      if (!self.usbDevice.opened) throw new Error("CH340 device is not open");
+      const result = await self.usbDevice.controlTransferOut({ requestType: "vendor", recipient: "device", request, value, index });
+      assertTransferOk(result, "control request 0x" + request.toString(16));
+    });
+    this.controlQueue = run.then(() => undefined, () => undefined);
+    await run;
+  }
+  createStreams() {
+    const self = this;
+    const inEp = this.endpointIn, outEp = this.endpointOut;
+    this.readLoopRunning = true;
+    this.readable = new ReadableStream({
+      pull: async (controller) => {
+        while (self.readLoopRunning && self.usbDevice.opened) {
+          try {
+            const result = await self.usbDevice.transferIn(inEp, MAX_TRANSFER_SIZE);
+            if (result.status === "stall") { await self.usbDevice.clearHalt("in", inEp); continue; }
+            if (result.status === "ok" && result.data && result.data.byteLength > 0) {
+              controller.enqueue(new Uint8Array(result.data.buffer, result.data.byteOffset, result.data.byteLength));
+              return;
+            }
+          } catch (e) {
+            if (!self.readLoopRunning || !self.usbDevice.opened) return;
+            throw e;
+          }
+        }
+      },
+      cancel: () => { self.readLoopRunning = false; }
+    });
+    this.writable = new WritableStream({
+      write: async (chunk) => {
+        if (!self.usbDevice.opened) throw new Error("CH340 device is not open");
+        const result = await self.usbDevice.transferOut(outEp, chunk);
+        assertTransferOk(result, "bulk OUT");
+      }
+    });
+  }
+}
+
+/* ---------------- 连接 ---------------- */
+function explainError(e) {
+  const name = (e && e.name) || "Error";
+  const msg = (e && e.message) || String(e);
+  if (name === "NotFoundError") return t("noDevice");
+  if (name === "SecurityError") return "Access denied（接口被占用：关掉其它串口工具/旧标签页，拔插一次再试）";
+  if (name === "NetworkError") return "NetworkError（USB 会话抖动：拔插一次再试）";
+  return name + ": " + msg;
+}
+
+async function requestAdapter() {
+  if (!navigator.usb) throw new Error("WebUSB 不可用（需要 Chrome/Edge，且 HTTPS 或 localhost）");
+  const device = await navigator.usb.requestDevice({ filters: [{ vendorId: WCH_VID }] });
+  const hasVendor = (device.configurations[0] || { interfaces: [] }).interfaces
+    .some((i) => i.alternates.some((a) => a.interfaceClass === VENDOR_CLASS));
+  if (device.productId === CH343_PID || !hasVendor) {
+    if (navigator.serial) {
+      const sp = await navigator.serial.requestPort();
+      return { kind: "serial", port: sp };
+    }
+    throw new Error("这是 CDC 类适配器，当前版本请用桌面 Chrome 的 Web Serial，或换 CH340 适配器");
+  }
+  return { kind: "ch340", port: new WebUSBSerialPort(device) };
+}
+
+async function openPort(adapter, baudRate) {
+  const p = adapter.port;
+  const delays = [0, 400, 1200];
+  let lastErr = null;
+  for (let i = 0; i < delays.length; i++) {
+    if (delays[i]) await sleep(delays[i]);
+    try {
+      await p.open({ baudRate: baudRate, dataBits: 8, stopBits: 1, parity: "none" });
+      return;
+    } catch (e) {
+      lastErr = e;
+      logLine("[open] 失败 " + (i + 1) + "/" + delays.length + ": " + ((e && e.name) || "") + " " + ((e && e.message) || e));
+      if (!(e && e.name === "SecurityError")) break;
+    }
+  }
+  throw lastErr;
+}
+
+function pipeRead(p) {
+  (async () => {
+    reader = p.readable.getReader();
+    const dec = new TextDecoder();
+    try {
+      for (;;) {
+        const r = await reader.read();
+        if (r.done) break;
+        const s = dec.decode(r.value, { stream: true });
+        for (const ch of s) {
+          if (ch === "\n" || ch === "\r") {
+            if (lineBuf) {
+              const line = lineBuf; lineBuf = "";
+              if (!line.startsWith("TX> ")) logLine("← " + line);
+            }
+          } else lineBuf += ch;
+        }
+      }
+    } catch (e) {
+      if (connected) logLine("[read] 停止: " + ((e && e.message) || e));
+    }
+  })();
+}
+
+async function sendLine(line) {
+  const payload = line + PROTOCOL.lineEnding;
+  logLine("→ " + (line ? line : "<CRLF>"));
+  await writer.write(new TextEncoder().encode(payload));
+  await writer.ready;
+}
+
+async function teardown() {
+  try { if (reader) await reader.cancel(); } catch (e) {}
+  try { if (writer) writer.releaseLock(); } catch (e) {}
+  try { if (port) await port.close(); } catch (e) {}
+  reader = null; writer = null; port = null; connected = false;
+  setChip(false);
+  $("btnDisconnect").disabled = true;
+}
+
+/* ---------------- 体检流程 ---------------- */
+async function runSteps(steps) {
+  for (const step of steps) {
+    if (step.kind === "listen") { await sleep(step.ms); continue; }
+    if (step.kind === "send") {
+      const line = step.raw ? step.line : step.line;
+      if (!step.raw && !isAllowedCommand(line)) { logLine("[skip] 剧本里出现非查询命令：" + line); continue; }
+      try { await sendLine(line); } catch (e) { if (!step.bestEffort) throw e; logLine("[warn] 发送失败：" + line); }
+      await sleep(step.waitMs || 500);
+    }
+  }
+}
+
+async function runCheck() {
+  if (busy) return;
+  busy = true;
+  $("btnRun").disabled = true;
+  buffer = ""; lineBuf = ""; lastResult = null;
+  $("logbox").textContent = "";
+  const password = $("pw").value.trim();
+  const reboot = $("reboot").value === "1";
+  const baudPref = Number($("baud").value || 0);
+  const bauds = baudPref ? [baudPref] : PROTOCOL.baudCandidates;
+  try {
+    setChip(false, true);
+    const adapter = await requestAdapter();
+    port = adapter.port;
+    for (const baud of bauds) {
+      await openPort(adapter, baud);
+      if (adapter.kind === "serial") {
+        writer = port.writable.getWriter();
+      } else {
+        writer = port.writable.getWriter();
+      }
+      pipeRead(port);
+      connected = true;
+      setChip(true);
+      $("btnDisconnect").disabled = false;
+      logLine("[sys] 已连接 @" + baud);
+      await runSteps([{ kind: "send", line: "", waitMs: 600 }]);
+      if (buffer.replace(/→.*/g, "").trim().length > 0) break;
+      // 9600 没反应 → 换波特率重试
+      if (baud === bauds[bauds.length - 1]) break;
+      await teardown();
+      port = adapter.port;
+    }
+    const probe = buildProbeScript({ password: password });
+    await runSteps(probe);
+    const variant = detectVariant(buffer);
+    logLine("[sys] 变体判定: " + variant);
+    const plan = buildPlanScript(variant === "unknown" ? "nb" : variant, { password: password, reboot: reboot });
+    await runSteps(plan);
+    finalize();
+  } catch (e) {
+    logLine("[error] " + explainError(e));
+    $("hint").textContent = explainError(e);
+  } finally {
+    busy = false;
+    $("btnRun").disabled = false;
+  }
+}
+
+function readProfile() {
+  const raw = $("profile").value.trim();
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch (e) { logLine("[warn] 期望值 JSON 解析失败：" + ((e && e.message) || e)); return {}; }
+}
+
+function finalize() {
+  if (!buffer.trim()) { $("hint").textContent = t("emptyLog"); return; }
+  const report = parseConsole(buffer);
+  const verdict = evaluate(report, { profile: readProfile() });
+  lastResult = { report, verdict };
+  render(lastResult);
+}
+
+/* ---------------- 渲染 ---------------- */
+function render(res) {
+  const { report, verdict } = res;
+  const v = $("verdict");
+  v.className = "verdict " + verdict.verdict;
+  $("verdictText").textContent = verdict.verdict === "pass" ? t("vPass") : verdict.verdict === "warn" ? t("vWarn") : t("vFail");
+  $("verdictSub").textContent = verdict.verdict === "pass" ? t("subPass") : verdict.verdict === "warn" ? t("subWarn") : t("subFail");
+  $("cntFail").textContent = verdict.counts.fail || 0;
+  $("cntWarn").textContent = verdict.counts.warn || 0;
+  $("cntPass").textContent = verdict.counts.pass || 0;
+
+  const showIds = $("showIds").value === "1";
+  const body = $("resultsBody");
+  body.innerHTML = "";
+  for (const g of verdict.groups) {
+    if (!g.items.length) continue;
+    const wrap = document.createElement("div");
+    wrap.style.marginBottom = "14px";
+    const h = document.createElement("h2");
+    h.textContent = tGroup(g.id);
+    wrap.appendChild(h);
+    const table = document.createElement("table");
+    const head = document.createElement("tr");
+    head.innerHTML = "<th></th><th>" + (T[lang].note && T[lang].note.value ? T[lang].note.value : "actual") + "</th><th>" + (T[lang].note && T[lang].note.expected ? T[lang].note.expected : "expected") + "</th>";
+    table.appendChild(head);
+    for (const it of g.items) {
+      const tr = document.createElement("tr");
+      const td1 = document.createElement("td");
+      const dot = document.createElement("span");
+      dot.className = "dot " + it.level;
+      td1.appendChild(dot);
+      td1.appendChild(document.createTextNode(tItem(it.id)));
+      const note = tNote(it.id, it.level);
+      if (note) {
+        const n = document.createElement("div");
+        n.className = "note " + (it.level === "fail" ? "fail" : it.level === "warn" ? "warn" : "");
+        n.textContent = note;
+        td1.appendChild(n);
+      }
+      const td2 = document.createElement("td");
+      td2.className = "v";
+      let val = it.value === null || it.value === undefined || it.value === "" ? "—" : String(it.value);
+      if (it.masked && !showIds) val = maskValue(it.value);
+      td2.textContent = val + (it.unit && it.value !== null ? " " + it.unit : "");
+      const td3 = document.createElement("td");
+      td3.className = "v";
+      td3.textContent = it.expected !== undefined && it.expected !== null ? String(it.expected) : "";
+      tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+      table.appendChild(tr);
+    }
+    wrap.appendChild(table);
+    body.appendChild(wrap);
+  }
+  if (!verdict.groups.some((g) => g.items.length)) body.textContent = t("resultsEmpty");
+  $("btnCopy").disabled = false;
+  $("btnDownload").disabled = false;
+  $("btnCopyLog").disabled = buffer.trim().length === 0;
+}
+
+function reportText(res) {
+  const { report, verdict } = res;
+  const L = [
+    "LeafIoT device-check " + APP_VERSION,
+    new Date().toISOString(),
+    "variant: " + report.variant + "  firmware: " + (report.firmware || "-"),
+    "verdict: " + verdict.verdict.toUpperCase() + "  (fail=" + verdict.counts.fail + " warn=" + verdict.counts.warn + " pass=" + verdict.counts.pass + ")",
+    ""
+  ];
+  for (const g of verdict.groups) {
+    if (!g.items.length) continue;
+    L.push("[" + tGroup(g.id) + "]");
+    for (const it of g.items) {
+      const val = it.masked ? maskValue(it.value) : it.value;
+      L.push("  " + it.level.toUpperCase().padEnd(4) + " " + tItem(it.id) + ": " + (val === null || val === undefined ? "—" : val));
+    }
+    L.push("");
+  }
+  L.push("--- raw log ---", report.raw);
+  return L.join("\n");
+}
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e2) {}
+    document.body.removeChild(ta);
+  }
+}
+
+/* ---------------- 事件 ---------------- */
+$("lang").value = lang;
+$("lang").addEventListener("change", (e) => {
+  lang = e.target.value;
+  localStorage.setItem("dc.lang", lang);
+  applyI18n();
+});
+$("btnRun").addEventListener("click", runCheck);
+$("btnDisconnect").addEventListener("click", async () => { await teardown(); });
+$("btnCopy").addEventListener("click", async () => {
+  if (!lastResult) return;
+  await copyText(reportText(lastResult));
+  const b = $("btnCopy"); const old = b.textContent;
+  b.textContent = t("copied"); setTimeout(() => { b.textContent = old; }, 1200);
+});
+$("btnDownload").addEventListener("click", () => {
+  if (!lastResult) return;
+  const blob = new Blob([reportText(lastResult)], { type: "text/plain;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "device-check-" + new Date().toISOString().replace(/[:.]/g, "-") + ".txt";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+$("btnCopyLog").addEventListener("click", async () => {
+  await copyText(buffer);
+  const b = $("btnCopyLog"); const old = b.textContent;
+  b.textContent = t("copied"); setTimeout(() => { b.textContent = old; }, 1200);
+});
+$("replayFile").addEventListener("change", async (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  $("replayText").value = await f.text();
+});
+$("btnReplay").addEventListener("click", () => {
+  const text = $("replayText").value;
+  if (!text.trim()) return;
+  buffer = text;
+  $("logbox").textContent = text.slice(-40000);
+  const report = parseConsole(text);
+  const verdict = evaluate(report, { profile: readProfile() });
+  lastResult = { report, verdict };
+  render(lastResult);
+});
+
+$("verLine").textContent = "v" + APP_VERSION + " · core: parse+evaluate · 9600 8N1";
+applyI18n();
+setChip(false);
+
+/* 演示/自测：?demo=1 载入内置健康日志；?demo=<文件名> 载入 tests/fixtures 下的文件 */
+const demo = new URLSearchParams(location.search).get("demo");
+if (demo) {
+  const file = demo === "1" ? "nb-healthy.txt" : demo;
+  fetch("./tests/fixtures/" + file).then((r) => (r.ok ? r.text() : "")).then((txt) => {
+    if (!txt) return;
+    buffer = txt;
+    $("logbox").textContent = txt;
+    const report = parseConsole(txt);
+    const verdict = evaluate(report, { profile: readProfile() });
+    lastResult = { report, verdict };
+    render(lastResult);
+    document.title = "DEMO " + verdict.verdict + " · " + file;
+  }).catch(() => {});
+}
+</script>
+</body>
+</html>

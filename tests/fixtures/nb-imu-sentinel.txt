@@ -1,0 +1,18 @@
+DRAGINO TSE NB Device
+Image Version: TSE NB v1.4 260826
+Time: 26/11/20 08:41:02
+Angle
+Roll=179.29 Pitch=179.29
+Internal Comparison Angle
+Roll:-5.79 Pitch:-1.57
+Device ID= 869930000000305
+Product ID= 1106
+AuthInfo= LFTAN000305HWsy
+APN= cmhk
+COPS= 45412
+Server IP & PORT= 183.0.0.0,5683
+REBOOTING
+REBOOT_CAUSE_WATCHDOG
+Correct Password
+AT+BAT=BAT voltage=3601mV
++CSQ:11,99
