@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.4-alpha — 2026-11-24
+
+- 新增：WebUSB 打开失败时自动改用 Web Serial 重试（Windows 装了 WCH 串口驱动、CH340 被系统占成 COM 口时走这条）
+
 ## v0.1.3-alpha — 2026-11-24
 
 - 变更：AT 密码改为直接写入 `config.js`

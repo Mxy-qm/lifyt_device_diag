@@ -485,6 +485,12 @@ function explainError(e) {
   return name + ": " + msg;
 }
 
+async function requestSerialAdapter() {
+  if (!navigator.serial) throw new Error("Web Serial 不可用（需要桌面 Chrome/Edge，且 HTTPS 或 localhost）");
+  const sp = await navigator.serial.requestPort();
+  return { kind: "serial", port: sp };
+}
+
 async function requestAdapter() {
   if (!navigator.usb) throw new Error("WebUSB 不可用（需要 Chrome/Edge，且 HTTPS 或 localhost）");
   const device = await navigator.usb.requestDevice({ filters: [{ vendorId: WCH_VID }] });
@@ -580,9 +586,18 @@ async function runCheck() {
   const password = AT_PASSWORD;
   try {
     setChip(false, true);
-    const adapter = await requestAdapter();
+    let adapter = await requestAdapter();
+    try {
+      await openPort(adapter, PROTOCOL.baudRate);
+    } catch (e) {
+      // Windows 装了 WCH 串口驱动时，CH340 常被系统当成 COM 口，WebUSB 拿不到接口
+      if (!navigator.serial) throw e;
+      logLine("[sys] WebUSB 打不开（" + ((e && e.name) || e) + "），改用 Web Serial 重试");
+      try { await adapter.port.close(); } catch (e2) {}
+      adapter = await requestSerialAdapter();
+      await openPort(adapter, PROTOCOL.baudRate);
+    }
     port = adapter.port;
-    await openPort(adapter, PROTOCOL.baudRate);
     writer = port.writable.getWriter();
     pipeRead(port);
     connected = true;
