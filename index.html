@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LeafIoT 设备体检 · Device Check</title>
+<title>设备体检 · LiFY-T device diag</title>
 <style>
   :root{
     --bg:#f2f7f3; --card:#fff; --ink:#16321f; --muted:#5f7a68; --line:#d9e6dd;
@@ -58,7 +58,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LeafIoT 设备体检<small>device-check</small></div>
+  <div class="brand"><span data-i18n="brand">设备体检</span><small>LiFY-T</small></div>
   <span class="grow"></span>
   <span id="chip" class="chip off" data-i18n="notConnected">未连接</span>
   <select id="lang" aria-label="language">
@@ -161,7 +161,7 @@ import {
 /* ---------------- i18n ---------------- */
 const T = {
   zh: {
-    notConnected:"未连接", connected:"已连接", connecting:"连接中…", noDevice:"没有选中设备",
+    brand:"设备体检", notConnected:"未连接", connected:"已连接", connecting:"连接中…", noDevice:"没有选中设备",
     connectTitle:"第一步 · 连接设备", runCheck:"连接并体检", disconnect:"断开",
     connectHint:"手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点上面的按钮。",
     advTitle:"高级（内部使用）", lblPassword:"AT 密码（留空则跳过解锁）", lblBaud:"波特率",
@@ -214,7 +214,7 @@ const T = {
     }
   },
   zhHant: {
-    notConnected:"未連線", connected:"已連線", connecting:"連線中…", noDevice:"沒有選中裝置",
+    brand:"設備體檢", notConnected:"未連線", connected:"已連線", connecting:"連線中…", noDevice:"沒有選中裝置",
     connectTitle:"第一步 · 連線裝置", runCheck:"連線並體檢", disconnect:"中斷",
     connectHint:"手機/電腦用 USB-TTL 接裝置右上角 3 針（TXD/RXD/GND），插上後點上面的按鈕。",
     advTitle:"進階（內部使用）", lblPassword:"AT 密碼（留空則跳過解鎖）", lblBaud:"鮑率",
@@ -266,7 +266,7 @@ const T = {
     }
   },
   en: {
-    notConnected:"Disconnected", connected:"Connected", connecting:"Connecting…", noDevice:"No device selected",
+    brand:"Device Check", notConnected:"Disconnected", connected:"Connected", connecting:"Connecting…", noDevice:"No device selected",
     connectTitle:"Step 1 · Connect", runCheck:"Connect & check", disconnect:"Disconnect",
     connectHint:"Wire USB-TTL to the 3 pins at the top-right of the board (TXD/RXD/GND), plug in, then press the button.",
     advTitle:"Advanced (internal)", lblPassword:"AT password (blank = skip unlock)", lblBaud:"Baud rate",
@@ -716,7 +716,7 @@ function render(res) {
 function reportText(res) {
   const { report, verdict } = res;
   const L = [
-    "LeafIoT device-check " + APP_VERSION,
+    "LiFY-T device diag " + APP_VERSION,
     new Date().toISOString(),
     "variant: " + report.variant + "  firmware: " + (report.firmware || "-"),
     "verdict: " + verdict.verdict.toUpperCase() + "  (fail=" + verdict.counts.fail + " warn=" + verdict.counts.warn + " pass=" + verdict.counts.pass + ")",
@@ -765,7 +765,7 @@ $("btnDownload").addEventListener("click", () => {
   const blob = new Blob([reportText(lastResult)], { type: "text/plain;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "device-check-" + new Date().toISOString().replace(/[:.]/g, "-") + ".txt";
+  a.download = "device-diag-" + new Date().toISOString().replace(/[:.]/g, "-") + ".txt";
   a.click();
   URL.revokeObjectURL(a.href);
 });

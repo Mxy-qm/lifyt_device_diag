@@ -432,7 +432,7 @@ export function maskValue(v, visible) {
 
 export function buildResult(report, verdict, meta) {
   return {
-    app: "LeafIoT device-check",
+    app: "LiFY-T device diag",
     version: APP_VERSION,
     generatedAt: new Date().toISOString(),
     meta: meta || {},

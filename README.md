@@ -1,4 +1,4 @@
-# LeafIoT device-check · 设备体检（USB-TTL 直连）
+# lifyt_device_diag · 设备体检（USB-TTL 直连）
 
 USB-TTL 接到 LiFY-T 树传感器的串口，网页自动跑一套**固定体检剧本**，直接给出
 PASS / WARN / FAIL、分组明细和可复制的报告。客户只需要插线、点一次按钮、看结论。
@@ -11,7 +11,7 @@ PASS / WARN / FAIL、分组明细和可复制的报告。客户只需要插线�
 ## 快速开始
 
 ```powershell
-cd device-check
+cd lifyt_device_diag
 python -m http.server 8771        # 或双击 serve.cmd
 # 浏览器打开 http://127.0.0.1:8771
 # 端口被占用就换一个（本机 8765 已被别的服务占着）
@@ -56,7 +56,7 @@ WebUSB 要求安全上下文：**HTTPS 或 localhost**。iOS 浏览器不支持 
 ## 目录
 
 ```
-device-check/
+lifyt_device_diag/
 ├─ index.html                单页 UI + CH340/Web Serial 连接层
 ├─ core.js                   协议事实、剧本、解析、判定（无 DOM，node 可测）
 ├─ docs/protocol-notes.md    设备控制台协议事实与来源、待真机确认项

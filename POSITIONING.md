@@ -7,7 +7,7 @@
 
 ## 与 signal_tester 的分工
 
-| | signal_tester（信号棒） | device-check（本仓库） |
+| | signal_tester（信号棒） | lifyt_device_diag（本仓库） |
 |---|---|---|
 | 测什么 | **环境**：这个点位有没有 NB 信号 | **设备**：这台设备本身配好了没有、有没有坏 |
 | 硬件 | BC28 测试棒（外接探头） | 任意 CH340 USB-TTL + 设备自带串口 |
