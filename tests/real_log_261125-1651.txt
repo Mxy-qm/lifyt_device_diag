@@ -1,0 +1,230 @@
+LiFY-T device diag 0.1.7-alpha
+2026-11-25T08:51:05.079Z
+variant: nb  firmware: TSE NB v1.3 231218
+verdict: WARN  (fail=0 warn=2 pass=15)
+
+[System]
+  PASS Device: nb
+  PASS Firmware: TSE NB v1.3 231218
+
+[Identity]
+  PASS Device ID: 161275545
+  PASS AuthInfo: LFT0153afs
+  PASS Product ID: 16000695
+
+[Configuration]
+  PASS Server: 47.91.203.178,6002
+  SKIP APN: —
+  SKIP COPS: —
+  SKIP Band: —
+  SKIP Collect/report interval: —
+  PASS Angle threshold: 10
+  PASS Mounting: Attached
+
+[Power]
+  SKIP Battery: —
+
+[Sensor]
+  PASS Current angle: -90.67 / 131.38
+  PASS Reference angle: 15.97 / 8.13
+  WARN Angle delta: 123.25
+
+[Time & reboot]
+  PASS Device time: 26/11/25 16:50:21
+  PASS Reboot cause: APPLICATION_AT
+
+[Network]
+  PASS Signal (CSQ): 12,99
+  SKIP Registration: —
+  PASS SIM: 454120845009025
+  SKIP IMEI: —
+  SKIP ICCID: —
+
+[Log]
+  PASS AT unlock: —
+  WARN Error lines: —
+
+--- raw log ---
+
+
+Correct Password
+
+DRAGINO TSE NB Device
+Image Version: TSE NB v1.3 231218
+LSI=42856
+Total Size= 119M
+Free Size= 117M
+Time: 26/11/25 16:50:21
+Angle
+Roll=-90.67 Pitch=131.38
+Internal Comparison Angle
+Roll:15.97 Pitch:8.13
+Device ID= 161275545
+Product ID= 16000695
+AuthInfo= LFT0153afs
+Server IP & PORT= 47.91.203.178,6002
+454120845009025
+RE
+REBOOT_CAUSE_APPLICATION_AT
+Neul 
+OK
+
+Correct Password
+
+TSE NB v1.3 231218
+ 
+OK
+
+161275545
+OK
+
+16000695
+OK
++CSQ:13,99 Query whether the network is activated? 1
+
+LFT0153afs
+OK
+
+47.91.203.178,6002
+OK
+
+10
+OK
+
+Roll:15.97 Pitch:8.13
+OK
+
+AT_ERROR
+
+AT_ERROR
++CSQ:12,99 Query whether the network is activated? 2
+Attached
+
+
+26/11/25 16:50:35
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[sys] 已连接 @9600
+→ <CRLF>
+→ 83724
+← Correct Password
+→ ATZ
+← DRAGINO TSE NB Device
+← Image Version: TSE NB v1.3 231218
+← LSI=42856
+← Total Size= 119M
+← Free Size= 117M
+← Time: 26/11/25 16:50:21
+← Angle
+← Roll=-90.67 Pitch=131.38
+← Internal Comparison Angle
+← Roll:15.97 Pitch:8.13
+← Device ID= 161275545
+← Product ID= 16000695
+← AuthInfo= LFT0153afs
+← Server IP & PORT= 47.91.203.178,6002
+← 454120845009025
+← RE
+← REBOOT_CAUSE_APPLICATION_AT
+← Neul 
+← OK
+→ 83724
+← Correct Password
+[sys] 变体判定: nb
+→ AT+VER=?
+← TSE NB v1.3 231218
+←  
+← OK
+→ AT+DEVID=?
+← 161275545
+← OK
+→ AT+PROID=?
+← 16000695
+← OK
+← +CSQ:13,99 Query whether the network is activated? 1
+→ AT+AUTHINFO=?
+← LFT0153afs
+← OK
+→ AT+SERIP=?
+← 47.91.203.178,6002
+← OK
+→ AT+CTANGLE=?
+← 10
+← OK
+→ AT+ICANGLE=?
+← Roll:15.97 Pitch:8.13
+← OK
+→ AT+ITYP=?
+← AT_ERROR
+[sys] AT+ITYP=? 没被接受，改用 AT+ITYP
+→ AT+ITYP
+← AT_ERROR
+← +CSQ:12,99 Query whether the network is activated? 2
+← Attached
+→ AT+EXTI=?
+[sys] AT+EXTI=? 没被接受，改用 AT+EXTI
+→ AT+EXTI
+← 26/11/25 16:50:35
+→ AT+TDC=?
+[sys] AT+TDC=? 没被接受，改用 AT+TDC
+→ AT+TDC
+→ AT+TDC
+→ AT+STDC=?
+[sys] AT+STDC=? 没被接受，改用 AT+STDC
+→ AT+STDC
+→ AT+STDC
+→ AT+BAT=?
+[sys] AT+BAT=? 没被接受，改用 AT+BAT
+→ AT+BAT
+→ AT+BAT
+→ AT+DATE=?
+[sys] AT+DATE=? 没被接受，改用 AT+DATE
+→ AT+DATE
+→ AT+DATE
+→ AT+CSQ
+→ AT+CFUN?
+→ AT+CPIN?
+→ AT+CEREG?
+→ AT+COPS?
+→ AT+CGSN
+→ AT+CIMI
+→ AT+NBAND?
+← DRAGINO TSE NB Device
+← Image Version: TSE NB v1.3 231218
+← LSI=42872
+← Total Size= 119M
+← Free Size= 117M
+← Time: 26/11/25 16:51:03
+← Angle
+← Roll=-90.66 Pitch=130.85
+← Internal Comparison Angle
+← Roll:15.97 Pitch:8.13
+← Device ID= 161275545
+← Product ID= 16000695
+← AuthInfo= LFT0153afs
+← Server IP & PORT= 47.91.203.178,6002
+← 454120845009025
+← RE
+← REBOOT_CAUSE_APPLICATION_AT
+← Neul 
+← OK
+← +CSQ:11,99 Query whether the network is activated? 1
+← Attached

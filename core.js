@@ -7,7 +7,7 @@
  *  3. 本文件不碰 DOM，浏览器与 node 测试共用。
  */
 
-export const APP_VERSION = "0.1.7-alpha";
+export const APP_VERSION = "0.1.8-alpha";
 
 /** 设备控制台协议事实 */
 export const PROTOCOL = {
@@ -97,7 +97,8 @@ export function buildPlanScript(variant, opts) {
   }
   if (variant === "nb") {
     // NB 固件（fw v1.3+）的取值为 AT+X=?；真机 v1.4 上裸写 AT+X 返回 AT_ERROR，故带 bare 备选
-    const q = (cmd, note, waitMs) => ({ kind: "send", line: "AT+" + cmd + "=?", alt: "AT+" + cmd, waitMs: waitMs || 900, note: note });
+    // 只用 =? 形态取値：裸写 AT+X 在这代固件上是 "Run"（有副作用），v1.3 实测会 AT_ERROR 甚至触发重启
+    const q = (cmd, note, waitMs) => ({ kind: "send", line: "AT+" + cmd + "=?", waitMs: waitMs || 900, note: note });
     steps.push(
       q("VER", "firmware"),
       q("DEVID", "device-id"),
@@ -232,8 +233,16 @@ export function parseConsole(text, meta) {
   const all = stripLogDecorations(text);
   const raw = all.replace(/^[ \t]*TX>[^\n]*$/gm, "");
   const variant = detectVariant(raw);
-  const banners = (raw.match(/DRAGINO\s+TSE\s+NB\s+Device/gi) || []).length +
+  // 启动次数：按启动块里的 RTC 值去重（粘贴的报告里同一段原文可能出现两次，直接数横幅会虚高）
+  const bootTimes = [];
+  {
+    const re = /Image Version:[^\n]*\n(?:[^\n]*\n){0,6}?Time:[ \t]*([^\r\n]+)/g;
+    let m = null;
+    while ((m = re.exec(raw)) !== null) bootTimes.push(m[1].trim());
+  }
+  const bannerHits = (raw.match(/DRAGINO\s+TSE\s+NB\s+Device/gi) || []).length +
     (raw.match(/(?:^|\n)\s*TSE\s+Device\s*\r?\n/g) || []).length;
+  const banners = bootTimes.length ? new Set(bootTimes).size : (bannerHits ? 1 : 0);
 
   // 只看最后一次启动块，避免被前一批残留配置带偏（与 QC 脚本同口径）
   const a = raw.lastIndexOf("DRAGINO TSE NB Device");
@@ -301,6 +310,12 @@ export function parseConsole(text, meta) {
   if (config.stdc === null || config.stdc === undefined) config.stdc = numFrom("AT+STDC");
   if (config.ctangle === null || config.ctangle === undefined) config.ctangle = numFrom("AT+CTANGLE");
   if (!config.ityp) config.ityp = from("AT+ITYP");
+
+  // 固件会周期性打印 Attached / 日期 之类状态行，可能被当成参数值：只接受合法取值
+  if (config.ityp && !/^[01]$/.test(String(config.ityp).trim())) config.ityp = null;
+  if (config.ctangle !== null && config.ctangle !== undefined && !(config.ctangle >= 0 && config.ctangle <= 180)) config.ctangle = null;
+  if (config.tdc !== null && config.tdc !== undefined && !(config.tdc >= 60000)) config.tdc = null;
+  if (config.stdc !== null && config.stdc !== undefined && !(config.stdc >= 60000)) config.stdc = null;
   const batFromEx = from("AT+BAT");
   const rtcFromEx = from("AT+DATE");
   const imeiFromEx = from("AT+CGSN");
@@ -553,7 +568,8 @@ export function evaluate(report, opts) {
     id: "log",
     items: [
       item("log.password", R.flags && R.flags.passwordAccepted ? "pass" : R.flags && R.flags.passwordRejected ? "warn" : "skip", null),
-      item("log.errors", R.flags && R.flags.error ? "warn" : "pass", null)
+      item("log.errors", R.flags && R.flags.error ? "warn" : "pass", null),
+      item("log.reboots", (R.banners || 0) >= 2 ? "warn" : "pass", R.banners || 0)
     ]
   });
 

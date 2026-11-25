@@ -188,7 +188,7 @@ const T = {
     copied:"已复制", copyFail:"复制失败", noVerdict:"还没有可导出的结果。",
     connecting2:"正在诊断，请别拔线…", emptyLog:"没有收到任何数据：检查接线（TX/RX 是否交叉）、设备是否上电。",
     group:{identity:"系统信息",identityVals:"设备标识",config:"参数配置",power:"电源",sensor:"传感器",time:"时间与重启",network:"网络",log:"日志检查"},
-    item:{"v.detect":"设备识别","v.firmware":"固件版本","id.deviceId":"设备 ID","id.authInfo":"AuthInfo","id.productId":"产品 ID","id.devEui":"DevEUI","cfg.server":"服务器地址","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"频段","cfg.intervals":"采集/上报间隔","cfg.ctangle":"角度阈值","cfg.ityp":"安装方式","pwr.battery":"电池电压","sen.angle":"当前角度","sen.icangle":"内部对比角","sen.alarmDiff":"角度偏差","time.rtc":"设备时间","time.rebootCause":"重启原因","net.csq":"信号 (CSQ)","net.cfun":"射频状态 (CFUN)","net.sim":"SIM 卡","net.reg":"网络注册","net.imei":"IMEI","net.iccid":"ICCID","net.join":"入网状态","net.rssi":"RSSI","log.password":"AT 解锁","log.errors":"错误行"},
+    item:{"v.detect":"设备识别","v.firmware":"固件版本","id.deviceId":"设备 ID","id.authInfo":"AuthInfo","id.productId":"产品 ID","id.devEui":"DevEUI","cfg.server":"服务器地址","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"频段","cfg.intervals":"采集/上报间隔","cfg.ctangle":"角度阈值","cfg.ityp":"安装方式","pwr.battery":"电池电压","sen.angle":"当前角度","sen.icangle":"内部对比角","sen.alarmDiff":"角度偏差","time.rtc":"设备时间","time.rebootCause":"重启原因","net.csq":"信号 (CSQ)","net.cfun":"射频状态 (CFUN)","net.sim":"SIM 卡","net.reg":"网络注册","net.imei":"IMEI","net.iccid":"ICCID","net.join":"入网状态","net.rssi":"RSSI","log.password":"AT 解锁","log.errors":"错误行","log.reboots":"启动次数"},
     note:{
       "v.detect.fail":"没有识别到设备型号，检查接线（TX/RX 是否交叉）。",
       "v.firmware.warn":"没读到固件版本号。",
@@ -218,6 +218,7 @@ const T = {
       "net.rssi.warn":"上一包的 RSSI 偏弱。",
       "log.password.warn":"密码错误，后面的查询可能都拿不到数据。",
       "log.errors.warn":"有 AT 命令被固件拒绝（AT_ERROR），可能是固件写法与剧本不一致。",
+      "log.reboots.warn":"诊断过程中设备重启了（启动块出现多次），重启之后那几步没测到。",
       "expected":"期望" , "value":"实测"
     }
   },
@@ -245,7 +246,7 @@ const T = {
     copied:"已複製", copyFail:"複製失敗", noVerdict:"還沒有可匯出的結果。",
     connecting2:"正在診斷，請別拔線…", emptyLog:"沒有收到任何資料：檢查接線（TX/RX 是否交叉）、裝置是否上電。",
     group:{identity:"系統資訊",identityVals:"裝置識別",config:"參數設定",power:"電源",sensor:"感測器",time:"時間與重啟",network:"網路",log:"日誌檢查"},
-    item:{"v.detect":"裝置識別","v.firmware":"韌體版本","id.deviceId":"裝置 ID","id.authInfo":"AuthInfo","id.productId":"產品 ID","id.devEui":"DevEUI","cfg.server":"伺服器位址","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"頻段","cfg.intervals":"採集/上報間隔","cfg.ctangle":"角度閾值","cfg.ityp":"安裝方式","pwr.battery":"電池電壓","sen.angle":"目前角度","sen.icangle":"內部比對角","sen.alarmDiff":"角度偏差","time.rtc":"裝置時間","time.rebootCause":"重啟原因","net.csq":"訊號 (CSQ)","net.cfun":"射頻狀態 (CFUN)","net.sim":"SIM 卡","net.reg":"網路註冊","net.imei":"IMEI","net.iccid":"ICCID","net.join":"入網狀態","net.rssi":"RSSI","log.password":"AT 解鎖","log.errors":"錯誤行"},
+    item:{"v.detect":"裝置識別","v.firmware":"韌體版本","id.deviceId":"裝置 ID","id.authInfo":"AuthInfo","id.productId":"產品 ID","id.devEui":"DevEUI","cfg.server":"伺服器位址","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"頻段","cfg.intervals":"採集/上報間隔","cfg.ctangle":"角度閾值","cfg.ityp":"安裝方式","pwr.battery":"電池電壓","sen.angle":"目前角度","sen.icangle":"內部比對角","sen.alarmDiff":"角度偏差","time.rtc":"裝置時間","time.rebootCause":"重啟原因","net.csq":"訊號 (CSQ)","net.cfun":"射頻狀態 (CFUN)","net.sim":"SIM 卡","net.reg":"網路註冊","net.imei":"IMEI","net.iccid":"ICCID","net.join":"入網狀態","net.rssi":"RSSI","log.password":"AT 解鎖","log.errors":"錯誤行","log.reboots":"開機次數"},
     note:{
       "v.detect.fail":"沒有識別到裝置型號，檢查接線（TX/RX 是否交叉）。",
       "v.firmware.warn":"沒讀到韌體版本。",
@@ -275,6 +276,7 @@ const T = {
       "net.rssi.warn":"上一包的 RSSI 偏弱。",
       "log.password.warn":"密碼錯誤，後面的查詢可能都拿不到資料。",
       "log.errors.warn":"有 AT 命令被韌體拒絕（AT_ERROR），可能是韌體寫法與劇本不一致。",
+      "log.reboots.warn":"診斷過程中裝置重啟了（開機區塊出現多次），重啟之後那幾步沒測到。",
       "expected":"期望", "value":"實測"
     }
   },
@@ -302,7 +304,7 @@ const T = {
     copied:"Copied", copyFail:"Copy failed", noVerdict:"Nothing to export yet.",
     connecting2:"Running the check — keep the cable plugged in…", emptyLog:"No data received: check wiring (TX/RX crossed), device power.",
     group:{identity:"System",identityVals:"Identity",config:"Configuration",power:"Power",sensor:"Sensor",time:"Time & reboot",network:"Network",log:"Log"},
-    item:{"v.detect":"Device","v.firmware":"Firmware","id.deviceId":"Device ID","id.authInfo":"AuthInfo","id.productId":"Product ID","id.devEui":"DevEUI","cfg.server":"Server","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"Band","cfg.intervals":"Collect/report interval","cfg.ctangle":"Angle threshold","cfg.ityp":"Mounting","pwr.battery":"Battery","sen.angle":"Current angle","sen.icangle":"Reference angle","sen.alarmDiff":"Angle delta","time.rtc":"Device time","time.rebootCause":"Reboot cause","net.csq":"Signal (CSQ)","net.cfun":"RF state (CFUN)","net.sim":"SIM","net.reg":"Registration","net.imei":"IMEI","net.iccid":"ICCID","net.join":"Join state","net.rssi":"RSSI","log.password":"AT unlock","log.errors":"Error lines"},
+    item:{"v.detect":"Device","v.firmware":"Firmware","id.deviceId":"Device ID","id.authInfo":"AuthInfo","id.productId":"Product ID","id.devEui":"DevEUI","cfg.server":"Server","cfg.apn":"APN","cfg.cops":"COPS","cfg.nband":"Band","cfg.intervals":"Collect/report interval","cfg.ctangle":"Angle threshold","cfg.ityp":"Mounting","pwr.battery":"Battery","sen.angle":"Current angle","sen.icangle":"Reference angle","sen.alarmDiff":"Angle delta","time.rtc":"Device time","time.rebootCause":"Reboot cause","net.csq":"Signal (CSQ)","net.cfun":"RF state (CFUN)","net.sim":"SIM","net.reg":"Registration","net.imei":"IMEI","net.iccid":"ICCID","net.join":"Join state","net.rssi":"RSSI","log.password":"AT unlock","log.errors":"Error lines","log.reboots":"Boot count"},
     note:{
       "v.detect.fail":"Device model not detected — check the wiring (TX/RX crossed).",
       "v.firmware.warn":"Firmware version missing.",
@@ -332,6 +334,7 @@ const T = {
       "net.rssi.warn":"Last packet RSSI is weak.",
       "log.password.warn":"Wrong password — later queries may return nothing.",
       "log.errors.warn":"An AT command was rejected by the firmware (AT_ERROR) — the script form may not match this firmware.",
+      "log.reboots.warn":"The device rebooted during the check (multiple boot blocks) — items after the reboot were not measured.",
       "expected":"expected", "value":"actual"
     }
   }
@@ -614,19 +617,11 @@ async function runSteps(steps) {
       const line = step.line;
       if (!step.raw && !isAllowedCommand(line)) { logLine("[skip] 剧本里出现非查询命令：" + line); continue; }
       const mark = buffer.length;
-      let usedCmd = line;
+      const usedCmd = line;
       try { await sendLine(line); } catch (e) { if (!step.bestEffort) throw e; logLine("[warn] 发送失败：" + line); }
       await sleep(step.waitMs || 500);
-      // 固件对某种写法不认（AT_ERROR 或干脆不回）时，换备选写法再试一次
-      if (step.alt && isAllowedCommand(step.alt)) {
-        const chunk = buffer.slice(mark).replace(/^[ \t]*TX>[^\n]*$/gm, "");
-        if (/AT_ERROR/i.test(chunk) || chunk.replace(/\s+/g, "").length === 0) {
-          logLine("[sys] " + line + " 没被接受，改用 " + step.alt);
-          try { await sendLine(step.alt); } catch (e) { if (!step.bestEffort) throw e; }
-          await sleep(step.waitMs || 500);
-          usedCmd = step.alt;
-        }
-      }
+      // 注意：这里不再有"换成裸写 AT+X 再试"的备选。
+      // 固件语义里 AT+X 是 Run（有副作用），v1.3 实测会 AT_ERROR 甚至触发重启。
       // 记下这条命令的响应（只取设备输出行），供裸值解析归位
       const deviceLines = function (from) {
         return buffer.slice(from).split(/\r?\n/).filter(function (l) { return l && l.indexOf("TX> ") !== 0; });
@@ -785,7 +780,7 @@ function reportText(res) {
     "LiFY-T device diag " + APP_VERSION,
     new Date().toISOString(),
     "variant: " + report.variant + "  firmware: " + (report.firmware || "-"),
-    "verdict: " + verdict.verdict.toUpperCase() + "  (fail=" + verdict.counts.fail + " warn=" + verdict.counts.warn + " pass=" + verdict.counts.pass + ")",
+    "verdict: " + verdict.verdict.toUpperCase() + "  (fail=" + verdict.counts.fail + " warn=" + verdict.counts.warn + " pass=" + verdict.counts.pass + " skip=" + (verdict.counts.skip || 0) + ")",
     ""
   ];
   for (const g of verdict.groups) {

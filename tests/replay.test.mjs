@@ -42,7 +42,8 @@ test("主剧本随变体变化，且都可审计", () => {
   const lora = buildPlanScript("lora", { password: "", reboot: false });
   // NB 固件取值为 AT+X=?，并带裸写备选
   assert.ok(nb.some((s) => s.line === "AT+DEVID=?"));
-  assert.ok(nb.some((s) => s.line === "AT+DEVID=? " === false || s.alt === "AT+DEVID"));
+  // 裸写 = "Run"，有副作用（v1.3 实测会 AT_ERROR 甚至重启），剧本里不应再有备选
+  assert.ok(nb.every((s) => !s.alt), "NB 剧本不应再带裸写备选");
   assert.ok(!lora.some((s) => s.line === "AT+DEVID=?"));
   assert.ok(lora.some((s) => s.line === "AT+CFG"));
   assert.ok(nb.every((s) => s.kind !== "send" || s.raw || isAllowedCommand(s.line)));
@@ -102,7 +103,8 @@ test("同一日志重复启动块只认最后一个", () => {
   const r = parseConsole(one + "\n" + two);
   assert.equal(r.identity.deviceId, "869930000000400");
   assert.equal(r.config.server, "183.0.0.0,5683");
-  assert.equal(r.banners, 2);
+  // 两段是同一时刻的同一块日志（粘贴的报告里会出现这种情况），按 RTC 去重后只算一次启动
+  assert.equal(r.banners, 1);
 });
 
 /* ---------- 判定 ---------- */
@@ -264,6 +266,28 @@ test("裸值响应按 TX 配对归位", () => {
   assert.equal(r.network.imei, null, "异步噪音不能当成 IMEI");
   const ex = extractExchanges(log);
   assert.equal(ex.length, 6);
+});
+
+test("异步状态行不会被当成参数值", () => {
+  const log = [
+    "TX> AT+ITYP=?", "AT_ERROR",
+    "TX> AT+ITYP", "Attached",
+    "TX> AT+CTANGLE=?", "10", "OK",
+    "TX> AT+TDC=?", "10800000", "OK"
+  ].join("\n");
+  const r = parseConsole(log);
+  assert.equal(r.config.ityp, null, "Attached 不是安装方式");
+  assert.equal(r.config.ctangle, 10);
+  assert.equal(r.config.tdc, 10800000);
+});
+
+test("诊断中途重启会被点出来", () => {
+  const boot = (t) => ["DRAGINO TSE NB Device", "Image Version: TSE NB v1.3 231218", "Time: " + t, "Angle", "Roll=-90.67 Pitch=131.38", "Internal Comparison Angle", "Roll:15.97 Pitch:8.13", "Device ID= 161275545", "Product ID= 16000695", "AuthInfo= LFT0153afs", "Server IP & PORT= 47.91.203.178,6002", "REBOOT_CAUSE_APPLICATION_AT"].join("\n");
+  const r = parseConsole(boot("26/11/25 16:50:21") + "\n" + boot("26/11/25 16:51:03"));
+  assert.equal(r.banners, 2);
+  const v = evaluate(r, { locked: false });
+  const L = levels(v);
+  assert.equal(L.get("log.reboots"), "warn");
 });
 
 test("掩码只留尾号", () => {
