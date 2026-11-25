@@ -157,7 +157,7 @@
 <script type="module">
 import {
   APP_VERSION, PROTOCOL, isAllowedCommand,
-  buildProbeScript, buildPlanScript, buildUnlockScript,
+  buildProbeScript, buildPlanScript, buildUnlockScript, firstResponseValue,
   detectVariant, parseConsole, evaluate
 } from "./core.js";
 
@@ -211,7 +211,7 @@ const T = {
       "sen.alarmDiff.warn":"当前角度与对比角差超过阈值，现在上报会触发倾斜警报（安装完成后应重置对比角）。",
       "time.rtc.warn":"设备时间没对上（未同步 RTC），不影响上报但会影响判断时间。",
       "net.csq.warn":"设备未驻网或信号很差（99,99 或低位）。",
-      "net.cfun.fail":"射频已关闭（CFUN:0）。",
+      "net.cfun.fail":"射频被关掉了（CFUN:0），设备不会驻网；需要 AT+CFUN=1 打开射频后再测。",
       "net.sim.warn":"AT+CIMI 返回 ERROR：SIM 没插好或还没就绪。",
       "net.reg.warn":"设备没注册到网络（+CEREG stat 0）。",
       "net.join.warn":"LoRaWAN 尚未入网。",
@@ -268,7 +268,7 @@ const T = {
       "sen.alarmDiff.warn":"目前角度與比對角差超過閾值，現在上報會觸發傾斜警報（安裝完成後應重置比對角）。",
       "time.rtc.warn":"裝置時間沒對上（未同步 RTC），不影響上報但會影響判斷時間。",
       "net.csq.warn":"裝置未駐網或訊號很差（99,99 或低位）。",
-      "net.cfun.fail":"射頻已關閉（CFUN:0）。",
+      "net.cfun.fail":"射頻被關掉了（CFUN:0），裝置不會駐網；需要 AT+CFUN=1 打開射頻後再測。",
       "net.sim.warn":"AT+CIMI 回傳 ERROR：SIM 沒插好或還沒就緒。",
       "net.reg.warn":"裝置沒註冊到網路（+CEREG stat 0）。",
       "net.join.warn":"LoRaWAN 尚未入網。",
@@ -325,7 +325,7 @@ const T = {
       "sen.alarmDiff.warn":"Current angle differs from the reference by more than the threshold — an uplink now would raise a tilt alarm. Reset the reference after installation.",
       "time.rtc.warn":"Device clock is not set — harmless for reporting but confusing for timing.",
       "net.csq.warn":"Not attached or very weak signal (99,99 or low).",
-      "net.cfun.fail":"RF disabled (CFUN:0).",
+      "net.cfun.fail":"RF is disabled (CFUN:0) — the device cannot attach. Send AT+CFUN=1 to turn RF on, then re-check.",
       "net.sim.warn":"AT+CIMI returned ERROR — SIM missing or not ready.",
       "net.reg.warn":"Device is not registered on the network (+CEREG stat 0).",
       "net.join.warn":"LoRaWAN not joined.",
@@ -347,6 +347,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let lang = localStorage.getItem("dc.lang") || "en";
 let port = null, writer = null, reader = null;
 let connected = false, buffer = "", lineBuf = "", busy = false, lastResult = null;
+let exchanges = [];   // [{cmd, lines}]：哪条命令回了什么，裸值响应用它归位
 
 function t(key) {
   const pack = T[lang] || T.en;
@@ -613,6 +614,7 @@ async function runSteps(steps) {
       const line = step.line;
       if (!step.raw && !isAllowedCommand(line)) { logLine("[skip] 剧本里出现非查询命令：" + line); continue; }
       const mark = buffer.length;
+      let usedCmd = line;
       try { await sendLine(line); } catch (e) { if (!step.bestEffort) throw e; logLine("[warn] 发送失败：" + line); }
       await sleep(step.waitMs || 500);
       // 固件对某种写法不认（AT_ERROR 或干脆不回）时，换备选写法再试一次
@@ -622,8 +624,23 @@ async function runSteps(steps) {
           logLine("[sys] " + line + " 没被接受，改用 " + step.alt);
           try { await sendLine(step.alt); } catch (e) { if (!step.bestEffort) throw e; }
           await sleep(step.waitMs || 500);
+          usedCmd = step.alt;
         }
       }
+      // 记下这条命令的响应（只取设备输出行），供裸值解析归位
+      const deviceLines = function (from) {
+        return buffer.slice(from).split(/\r?\n/).filter(function (l) { return l && l.indexOf("TX> ") !== 0; });
+      };
+      let lines = deviceLines(mark);
+      // 固件会周期性插播状态行，把短窗口的响应冲掉；没取到值就安静 300ms 再问一次
+      if (/^AT/i.test(usedCmd) && !step.bestEffort && !firstResponseValue(lines)) {
+        await sleep(300);
+        const mark2 = buffer.length;
+        try { await sendLine(usedCmd); } catch (e) {}
+        await sleep(step.waitMs || 900);
+        lines = lines.concat(deviceLines(mark2));
+      }
+      if (/^AT/i.test(usedCmd)) exchanges.push({ cmd: usedCmd, lines: lines });
     }
   }
 }
@@ -644,7 +661,7 @@ async function runCheck() {
   if (busy) return;
   busy = true;
   $("btnRun").disabled = true;
-  buffer = ""; lineBuf = ""; display = ""; lastResult = null;
+  buffer = ""; lineBuf = ""; display = ""; lastResult = null; exchanges = [];
   $("logbox").textContent = "";
   const password = AT_PASSWORD;
   try {
@@ -696,7 +713,7 @@ function readProfile() {
 
 function finalize() {
   if (!buffer.trim()) { $("hint").textContent = t("emptyLog"); return; }
-  const report = parseConsole(buffer);
+  const report = parseConsole(buffer, { exchanges: exchanges });
   // 没有确认解锁成功 = locked：需要"问设备"才拿得到的项标未检查，不当异常
   const locked = !(report.flags && report.flags.passwordAccepted);
   const verdict = evaluate(report, { profile: readProfile(), locked: locked });

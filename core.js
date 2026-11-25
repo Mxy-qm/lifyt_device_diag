@@ -7,7 +7,7 @@
  *  3. 本文件不碰 DOM，浏览器与 node 测试共用。
  */
 
-export const APP_VERSION = "0.1.6-alpha";
+export const APP_VERSION = "0.1.7-alpha";
 
 /** 设备控制台协议事实 */
 export const PROTOCOL = {
@@ -97,7 +97,7 @@ export function buildPlanScript(variant, opts) {
   }
   if (variant === "nb") {
     // NB 固件（fw v1.3+）的取值为 AT+X=?；真机 v1.4 上裸写 AT+X 返回 AT_ERROR，故带 bare 备选
-    const q = (cmd, note, waitMs) => ({ kind: "send", line: "AT+" + cmd + "=?", alt: "AT+" + cmd, waitMs: waitMs || 600, note: note });
+    const q = (cmd, note, waitMs) => ({ kind: "send", line: "AT+" + cmd + "=?", alt: "AT+" + cmd, waitMs: waitMs || 900, note: note });
     steps.push(
       q("VER", "firmware"),
       q("DEVID", "device-id"),
@@ -195,7 +195,40 @@ export function deviceOutput(text) {
   return stripLogDecorations(text).replace(/^[ \t]*TX>[^\n]*$/gm, "");
 }
 
-export function parseConsole(text) {
+/** 异步噪音：固件会周期性打印这一句，会把响应归属冲乱 */
+const ASYNC_NOISE = /Query whether the network is activated|Failed to Set APN|Failed to Set COPS/i;
+
+/** 从一条命令的响应行里取第一个有意义的返回值（跳过 OK/ERROR/异步噪音） */
+export function firstResponseValue(lines) {
+  for (const raw of lines || []) {
+    const l = String(raw).trim();
+    if (!l) continue;
+    if (/^(OK|ERROR)$/i.test(l)) continue;
+    if (/^AT_(?:PARAM_|BUSY_|RX_)?ERROR$/i.test(l)) continue;
+    if (ASYNC_NOISE.test(l)) continue;
+    return l;
+  }
+  return null;
+}
+
+/** 从日志文本里还原 "TX> 命令 → 后续响应行" 的配对（回放粘贴的日志也能用） */
+export function extractExchanges(text) {
+  const lines = stripLogDecorations(text).split(/\r?\n/);
+  const out = [];
+  let cur = null;
+  for (const raw of lines) {
+    if (/^[ \t]*TX>[ \t]?/.test(raw)) {
+      const cmd = raw.replace(/^[ \t]*TX>[ \t]?/, "").trim();
+      cur = /^AT/i.test(cmd) ? { cmd: cmd, lines: [] } : null;
+      if (cur) out.push(cur);
+      continue;
+    }
+    if (cur) cur.lines.push(raw);
+  }
+  return out;
+}
+
+export function parseConsole(text, meta) {
   const all = stripLogDecorations(text);
   const raw = all.replace(/^[ \t]*TX>[^\n]*$/gm, "");
   const variant = detectVariant(raw);
@@ -209,7 +242,7 @@ export function parseConsole(text) {
   const cut = Math.max(a, b);
   const tail = cut > 0 ? raw.slice(cut) : raw;
 
-  const fw = pick(lastMatch(/Image Version:\s*(.+?)\s*$/im, tail)) || pick(lastMatch(/AT\+VER=\s*(.+?)\s*$/im, tail));
+  let fw = pick(lastMatch(/Image Version:\s*(.+?)\s*$/im, tail)) || pick(lastMatch(/AT\+VER=\s*(.+?)\s*$/im, tail));
   const band = pick(lastMatch(/Frequency Band:\s*(\S+)/i, tail));
 
   const internalIdx = tail.search(/Internal Comparison Angle/i);
@@ -246,10 +279,36 @@ export function parseConsole(text) {
     port: toNum(pick(lastMatch(/AT\+PORT=\s*(\d+)/, raw)))
   };
 
+  // 用 "刚发了哪条命令 -> 收到什么" 的配对结果补齐裸值响应（AT+TDC=? 只回一个数字那种）
+  const ex = (meta && meta.exchanges && meta.exchanges.length) ? meta.exchanges : extractExchanges(text);
+  const from = function (cmd) {
+    for (let i = ex.length - 1; i >= 0; i--) {
+      if (String(ex[i].cmd || "").toUpperCase().indexOf(cmd) === 0) return firstResponseValue(ex[i].lines);
+    }
+    return null;
+  };
+  const numFrom = function (cmd) {
+    const v = from(cmd);
+    const m = v && v.match(/-?\d+(?:\.\d+)?/);
+    return m ? Number(m[0]) : null;
+  };
+
+  if (!fw) {
+    const fwFromEx = from("AT+VER");
+    if (fwFromEx && /\bv\d/i.test(fwFromEx)) fw = fwFromEx;
+  }
+  if (config.tdc === null || config.tdc === undefined) config.tdc = numFrom("AT+TDC");
+  if (config.stdc === null || config.stdc === undefined) config.stdc = numFrom("AT+STDC");
+  if (config.ctangle === null || config.ctangle === undefined) config.ctangle = numFrom("AT+CTANGLE");
+  if (!config.ityp) config.ityp = from("AT+ITYP");
+  const batFromEx = from("AT+BAT");
+  const rtcFromEx = from("AT+DATE");
+  const imeiFromEx = from("AT+CGSN");
+
   const network = {
     csq: csqM ? { rssi: Number(csqM[1]), ber: Number(csqM[2]) } : null,
     cfun: toNum(pick(lastMatch(/\+CFUN:\s*(\d)/, raw))),
-    imei: pick(lastMatch(/(?:\+CGSN:\s*|IMEI[:=]\s*)(\d{14,16})/i, raw)),
+    imei: pick(lastMatch(/(?:\+CGSN:\s*|IMEI[:=]\s*)(\d{14,16})/i, raw)) || (imeiFromEx && /^\d{14,16}$/.test(imeiFromEx) ? imeiFromEx : null),
     // IMSI：优先 +CIMI 回显，其次用启动块里单独打印的那行 15 位号（固件会直接打出来）
     imsi: pick(lastMatch(/(?:\+CIMI:\s*|IMSI[:=]\s*)(\d{14,16})/i, raw)) || pick(lastMatch(/(?:^|\n)[ \t]*(\d{15})[ \t]*(?=\r?\n)/, tail)),
     iccid: iccidM ? iccidM[1] : null,
@@ -269,9 +328,9 @@ export function parseConsole(text) {
     server: /Server IP & PORT=/.test(tail) || /AT\+SERIP=/.test(raw),
     time: /(?:^|\n)[ \t]*(?:Time:|AT\+DATE=)/i.test(tail),
     battery: /BAT voltage=|AT\+BAT[=:]/.test(raw),
-    ctangle: /AT\+CTANGLE[=:]/.test(raw),
-    intervals: /AT\+(?:TDC|STDC|TCUSTOMIZE)[=:]/.test(raw),
-    ityp: /AT\+ITYP[=:]/.test(raw),
+    ctangle: /AT\+CTANGLE[=:]/.test(raw) || (config.ctangle !== null && config.ctangle !== undefined),
+    intervals: /AT\+(?:TDC|STDC|TCUSTOMIZE)[=:]/.test(raw) || (config.tdc !== null && config.tdc !== undefined && config.stdc !== null && config.stdc !== undefined),
+    ityp: /AT\+ITYP[=:]/.test(raw) || !!config.ityp,
     nband: /\+NBAND:/.test(raw),
     csq: /\+CSQ:/.test(raw),
     imei: /(?:\+CGSN:|IMEI[:=])/i.test(raw),
@@ -288,10 +347,10 @@ export function parseConsole(text) {
     seen: seen,
     firmware: fw,
     band: band,
-    rtc: parseRtc(rtcRaw),
+    rtc: parseRtc(rtcRaw) || parseRtc(rtcFromEx),
     angle: angle,
     icangle: icangle,
-    batteryMv: toNum(pick(lastMatch(/BAT voltage=\s*(\d+)\s*mV/i, raw))) || toNum(pick(lastMatch(/AT\+BAT=\s*(\d+)/, raw))),
+    batteryMv: toNum(pick(lastMatch(/BAT voltage=\s*(\d+)\s*mV/i, raw))) || toNum(pick(lastMatch(/AT\+BAT=\s*(\d+)/, raw))) || toNum(batFromEx && (batFromEx.match(/(\d{3,5})/) || [])[1]),
     rebootCause: pick(lastMatch(/REBOOT_CAUSE_([A-Z_]+)/i, raw)),
     identity: identity,
     config: config,

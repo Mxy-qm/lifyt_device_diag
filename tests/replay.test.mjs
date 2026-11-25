@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import {
   isAllowedCommand, sanitizeScript, buildPlanScript, buildProbeScript, buildUnlockScript,
-  stripLogDecorations,
+  stripLogDecorations, extractExchanges,
   detectVariant, parseConsole, parseRtc, evaluate, maskValue
 } from "../core.js";
 
@@ -244,6 +244,26 @@ test("有配置但没网：CSQ/注册/SIM 都要指出，配置本身仍判通�
   assert.equal(L.get("net.sim"), "warn", "CIMI 报错应指向 SIM 未就绪");
   assert.equal(L.get("pwr.battery"), "skip");
   assert.equal(v.verdict, "warn");
+});
+
+test("裸值响应按 TX 配对归位", () => {
+  const log = [
+    "TX> AT+VER=?", "TSE NB v1.4 260623", " ", "OK",
+    "TX> AT+TDC=?", "10800000", "OK",
+    "TX> AT+STDC=?", "3600000", "OK",
+    "TX> AT+BAT=?", "BAT voltage=3683mV", "OK",
+    "TX> AT+DATE=?", "21/1/30 02:25:54", "OK",
+    "TX> AT+CGSN", "+CSQ:99,99 Query whether the network is activated? 3", "+NBAND:8", "OK"
+  ].join("\n");
+  const r = parseConsole(log);
+  assert.equal(r.firmware, "TSE NB v1.4 260623");
+  assert.equal(r.config.tdc, 10800000);
+  assert.equal(r.config.stdc, 3600000);
+  assert.equal(r.batteryMv, 3683);
+  assert.equal(r.rtc.y4, 2021);
+  assert.equal(r.network.imei, null, "异步噪音不能当成 IMEI");
+  const ex = extractExchanges(log);
+  assert.equal(ex.length, 6);
 });
 
 test("掩码只留尾号", () => {

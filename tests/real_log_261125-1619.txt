@@ -1,0 +1,250 @@
+LiFY-T device diag 0.1.6-alpha
+2026-11-25T08:18:08.560Z
+variant: nb  firmware: TSE NB v1.4 260623
+verdict: FAIL  (fail=1 warn=4 pass=16)
+
+[System]
+  PASS Device: nb
+  PASS Firmware: TSE NB v1.4 260623
+
+[Identity]
+  PASS Device ID: 161628395
+  PASS AuthInfo: LFTAN00605az6FG
+  PASS Product ID: 16000695
+
+[Configuration]
+  PASS Server: 47.91.203.178,6002
+  PASS APN: JWE
+  PASS COPS: 45412
+  PASS Band: 8
+  SKIP Collect/report interval: —
+  SKIP Angle threshold: —
+  SKIP Mounting: —
+
+[Power]
+  PASS Battery: 3683
+
+[Sensor]
+  PASS Current angle: -91.65 / 161.93
+  PASS Reference angle: -84.77 / 7.98
+  WARN Angle delta: 153.95
+
+[Time & reboot]
+  WARN Device time: 21/1/30 02:25:41
+  PASS Reboot cause: APPLICATION_AT
+
+[Network]
+  WARN Signal (CSQ): 99,99
+  FAIL RF state (CFUN): 0
+  WARN Registration: stat 0
+  PASS SIM: 454120845009025
+  SKIP IMEI: —
+  SKIP ICCID: —
+
+[Log]
+  PASS AT unlock: —
+  PASS Error lines: —
+
+--- raw log ---
+Incorrect Password
+
+
+Correct Password
+
+DRAGINO TSE NB Device
+Image Version: TSE NB v1.4 260623
+LSI=37920
+Total Size= 119M
+Free Size= 118M
+Time: 21/1/30 02:25:41
+Angle
+Roll=-91.65 Pitch=161.93
+Internal Comparison Angle
+Roll:-84.77 Pitch:7.98
+Device ID= 161628395
+Product ID= 16000695
+AuthInfo= LFTAN00605az6FG
+APN= JWE
+COPS= 45412
+Server IP & PORT= 47.91.203.178,6002
+454120845009025
+REBOOT_CAUSE_APPLICATION_AT
+Neul 
+OK
+
+Correct Password
+
+TSE NB v1.4 260623
+ 
+OK
+
+161628395
+OK
+
+16000695
+OK
+
+LFTAN00605az6FG
+OK
+
+47.91.203.178,6002
+OK
+
+
+Failed to Set APN
+
+
+Failed to Set COPS
+
++CSQ:99,99 Query whether the network is activated? 1
+
+1
+OK
+
+10800000
+OK
+
+3600000
+OK
++CSQ:99,99 Query whether the network is activated? 2
+
+BAT voltage=3683mV
+OK
+
+21/1/30 02:25:54
+OK
+
++CSQ:99,99
+OK
+
++CFUN:0
+OK
+
+ERROR
+
++CEREG:0,0
+OK
+
++COPS:2
+OK
+
++CSQ:99,99 Query whether the network is activated? 3
+
+ERROR
+
++NBAND:8
+OK
+
+
+
+
+
+
+
+
+
+
+
+
+[sys] 已连接 @9600
+← Incorrect Password
+→ <CRLF>
+→ 83724
+← Correct Password
+→ ATZ
+← DRAGINO TSE NB Device
+← Image Version: TSE NB v1.4 260623
+← LSI=37920
+← Total Size= 119M
+← Free Size= 118M
+← Time: 21/1/30 02:25:41
+← Angle
+← Roll=-91.65 Pitch=161.93
+← Internal Comparison Angle
+← Roll:-84.77 Pitch:7.98
+← Device ID= 161628395
+← Product ID= 16000695
+← AuthInfo= LFTAN00605az6FG
+← APN= JWE
+← COPS= 45412
+← Server IP & PORT= 47.91.203.178,6002
+← 454120845009025
+← REBOOT_CAUSE_APPLICATION_AT
+← Neul 
+← OK
+→ 83724
+← Correct Password
+[sys] 变体判定: nb
+→ AT+VER=?
+← TSE NB v1.4 260623
+←  
+← OK
+→ AT+DEVID=?
+← 161628395
+← OK
+→ AT+PROID=?
+← 16000695
+← OK
+→ AT+AUTHINFO=?
+← LFTAN00605az6FG
+← OK
+→ AT+SERIP=?
+← 47.91.203.178,6002
+← OK
+→ AT+CTANGLE=?
+[sys] AT+CTANGLE=? 没被接受，改用 AT+CTANGLE
+→ AT+CTANGLE
+← Failed to Set APN
+→ AT+ICANGLE=?
+[sys] AT+ICANGLE=? 没被接受，改用 AT+ICANGLE
+→ AT+ICANGLE
+← Failed to Set COPS
+→ AT+ITYP=?
+← +CSQ:99,99 Query whether the network is activated? 1
+→ AT+EXTI=?
+← 1
+← OK
+→ AT+TDC=?
+← 10800000
+← OK
+→ AT+STDC=?
+← 3600000
+← OK
+← +CSQ:99,99 Query whether the network is activated? 2
+→ AT+BAT=?
+← BAT voltage=3683mV
+← OK
+→ AT+DATE=?
+← 21/1/30 02:25:54
+← OK
+→ AT+CSQ
+← +CSQ:99,99
+← OK
+→ AT+CFUN?
+← +CFUN:0
+← OK
+→ AT+CPIN?
+← ERROR
+→ AT+CEREG?
+← +CEREG:0,0
+← OK
+→ AT+COPS?
+← +COPS:2
+← OK
+→ AT+CGSN
+← +CSQ:99,99 Query whether the network is activated? 3
+→ AT+CIMI
+← ERROR
+→ AT+NBAND?
+← +NBAND:8
+← OK
+← +CSQ:99,99 Query whether the network is activated? 4
+← +CSQ:99,99 Query whether the network is activated? 5
+← +CSQ:99,99 Query whether the network is activated? 6
+← +CSQ:99,99 Query whether the network is activated? 7
+← +CSQ:99,99 Query whether the network is activated? 8
+← +CSQ:99,99 Query whether the network is activated? 9
+← +CSQ:99,99 Query whether the network is activated? 10
+← +CSQ:99,99 Query whether the network is activated? 11
+← +CSQ:99,99 Query whether the network is activated? 12
+[read] 停止: Failed to execute 'transferIn' on 'USBDevice': A transfer error has occurred.
