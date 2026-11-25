@@ -1,0 +1,9 @@
+Enumerating objects: 14, done.
+Counting objects:   7% (1/14)Counting objects:  14% (2/14)Counting objects:  21% (3/14)Counting objects:  28% (4/14)Counting objects:  35% (5/14)Counting objects:  42% (6/14)Counting objects:  50% (7/14)Counting objects:  57% (8/14)Counting objects:  64% (9/14)Counting objects:  71% (10/14)Counting objects:  78% (11/14)Counting objects:  85% (12/14)Counting objects:  92% (13/14)Counting objects: 100% (14/14)Counting objects: 100% (14/14), done.
+Delta compression using up to 16 threads
+Compressing objects:  12% (1/8)Compressing objects:  25% (2/8)Compressing objects:  37% (3/8)Compressing objects:  50% (4/8)Compressing objects:  62% (5/8)Compressing objects:  75% (6/8)Compressing objects:  87% (7/8)Compressing objects: 100% (8/8)Compressing objects: 100% (8/8), done.
+Writing objects:  12% (1/8)Writing objects:  25% (2/8)Writing objects:  37% (3/8)Writing objects:  50% (4/8)Writing objects:  62% (5/8)Writing objects:  75% (6/8)Writing objects:  87% (7/8)Writing objects: 100% (8/8)Writing objects: 100% (8/8), 7.81 KiB | 2.60 MiB/s, done.
+Total 8 (delta 5), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas:   0% (0/5)        remote: Resolving deltas:  20% (1/5)        remote: Resolving deltas:  40% (2/5)        remote: Resolving deltas:  60% (3/5)        remote: Resolving deltas:  80% (4/5)        remote: Resolving deltas: 100% (5/5)        remote: Resolving deltas: 100% (5/5), completed with 5 local objects.        
+To https://github.com/Mxy-qm/lifyt_device_diag.git
+   ffc731c..d7c450e  main -> main
