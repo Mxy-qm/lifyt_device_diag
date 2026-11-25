@@ -7,7 +7,7 @@
  *  3. 本文件不碰 DOM，浏览器与 node 测试共用。
  */
 
-export const APP_VERSION = "0.1.5-alpha";
+export const APP_VERSION = "0.1.6-alpha";
 
 /** 设备控制台协议事实 */
 export const PROTOCOL = {

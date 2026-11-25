@@ -15,7 +15,7 @@
   .brand{font-weight:700;color:var(--brand);letter-spacing:.2px}
   .brand small{font-weight:500;color:var(--muted);margin-left:6px;font-size:.72rem}
   .grow{flex:1}
-  .chip{border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:600;background:#fff}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:600;background:#fff;cursor:pointer}
   .chip.on{background:var(--brand-soft);border-color:#b8ddc7;color:var(--ok)}
   .chip.off{color:var(--bad);border-color:#f0c9c6;background:#fdf1f0}
   select,button,input,textarea{font:inherit;color:inherit}
@@ -27,7 +27,9 @@
   button.ghost{background:#fff;color:var(--brand)}
   button:disabled{opacity:.45;cursor:not-allowed}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .verdict{border-radius:14px;padding:16px;color:#fff;display:flex;gap:14px;align-items:center}
+  .verdict{border-radius:14px;padding:16px;color:#fff;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .vtext{flex:1 1 220px;min-width:0}
+  .badges{display:flex;gap:8px;flex:0 0 auto}
   .verdict .big{font-size:1.5rem;font-weight:800;line-height:1.15}
   .verdict .sub{opacity:.92;font-size:.85rem}
   .verdict.pass{background:linear-gradient(135deg,#1f7a4d,#2f9c67)}
@@ -57,14 +59,14 @@
   .mask{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:30}
   .mask .box{background:#fff;border-radius:14px;padding:14px;max-width:760px;width:100%}
   .mask textarea{width:100%;height:260px;font-family:ui-monospace,Consolas,monospace;font-size:.78rem}
-  @media(max-width:640px){.adv{grid-template-columns:1fr}.verdict .big{font-size:1.25rem}}
+  @media(max-width:640px){.adv{grid-template-columns:1fr}.verdict .big{font-size:1.2rem}.badges{flex:1 1 100%}.badge{flex:1}}
 </style>
 </head>
 <body>
 <header>
   <div class="brand"><span data-i18n="brand">设备诊断</span><small>LiFY-T</small></div>
   <span class="grow"></span>
-  <span id="chip" class="chip off" data-i18n="notConnected">未连接</span>
+  <button id="chip" class="chip off" type="button" data-i18n="notConnected">未连接</button>
   <select id="lang" aria-label="language">
     <option value="en">EN</option>
     <option value="zh">简</option>
@@ -76,24 +78,16 @@
   <div class="banner" data-i18n="alphaBanner">Alpha 内测版：判定口径与文案可能变动，结论仅供内部参考。</div>
 
   <section class="card">
-    <h2 data-i18n="connectTitle">第一步 · 连接设备</h2>
-    <div class="row">
-      <button id="btnRun" data-i18n="runCheck">连接并诊断</button>
-      <button id="btnDisconnect" class="ghost" data-i18n="disconnect" disabled>断开</button>
-    </div>
-    <div class="muted" style="margin-top:8px" id="hint" data-i18n="connectHint">手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点上面的按钮。</div>
-  </section>
-
-  <section class="card">
     <div id="verdict" class="verdict idle">
-      <div>
+      <div class="vtext">
         <div class="big" id="verdictText" data-i18n="idleVerdict">等待诊断</div>
         <div class="sub" id="verdictSub" data-i18n="idleSub">连上设备后会自动跑完一套固定检查</div>
       </div>
-      <span class="grow"></span>
-      <div class="badge"><b id="cntFail">0</b><span data-i18n="bFail">不通过</span></div>
-      <div class="badge"><b id="cntWarn">0</b><span data-i18n="bWarn">提示</span></div>
-      <div class="badge"><b id="cntPass">0</b><span data-i18n="bPass">通过</span></div>
+      <div class="badges">
+        <div class="badge"><b id="cntFail">0</b><span data-i18n="bFail">不通过</span></div>
+        <div class="badge"><b id="cntWarn">0</b><span data-i18n="bWarn">提示</span></div>
+        <div class="badge"><b id="cntPass">0</b><span data-i18n="bPass">通过</span></div>
+      </div>
     </div>
   </section>
 
@@ -130,6 +124,18 @@
   </details>
 </main>
 
+<div id="connMask" class="mask" hidden>
+  <div class="box">
+    <div style="font-weight:700;font-size:1.05rem;margin-bottom:6px" data-i18n="connectTitle">连接设备</div>
+    <div class="muted" id="hint" data-i18n="connectHint">手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点下面的按钮。</div>
+    <div class="row" style="margin-top:12px">
+      <button id="btnRun" data-i18n="runCheck">连接并诊断</button>
+      <button id="btnDisconnect" class="ghost" data-i18n="disconnect" disabled>断开</button>
+      <button id="btnConnClose" class="ghost" data-i18n="close">关闭</button>
+    </div>
+  </div>
+</div>
+
 <div id="copyMask" class="mask" hidden>
   <div class="box">
     <div style="font-weight:700;margin-bottom:6px" data-i18n="copyFailedTitle">自动复制没成功</div>
@@ -160,8 +166,8 @@ const T = {
   zh: {
     brand:"设备诊断", notConnected:"未连接", connected:"已连接", connecting:"连接中…", noDevice:"没有选中设备",
     connectTitle:"第一步 · 连接设备", runCheck:"连接并诊断", disconnect:"断开",
-    connectHint:"手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点上面的按钮。诊断开始时会重启设备一次（约 3 秒），用来采集完整启动信息。",
-    idleVerdict:"等待诊断", idleSub:"连上设备后会自动跑完一套固定检查",
+    connectHint:"手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点下面的按钮。诊断开始时会重启设备一次（约 3 秒），用来采集完整启动信息。",
+    idleVerdict:"等待诊断", idleSub:"点右上角「未连接」连接设备，之后会自动跑完一套固定检查",
     bFail:"不通过", bWarn:"提示", bPass:"通过",
     resultsTitle:"检查结果", resultsEmpty:"还没有结果。",
     copyReport:"复制报告", downloadReport:"下载报告", copyLog:"复制日志",
@@ -218,8 +224,8 @@ const T = {
   zhHant: {
     brand:"設備診斷", notConnected:"未連線", connected:"已連線", connecting:"連線中…", noDevice:"沒有選中裝置",
     connectTitle:"第一步 · 連線裝置", runCheck:"連線並診斷", disconnect:"中斷",
-    connectHint:"手機/電腦用 USB-TTL 接裝置右上角 3 針（TXD/RXD/GND），插上後點上面的按鈕。診斷開始時會重啟裝置一次（約 3 秒），用來採集完整開機資訊。",
-    idleVerdict:"等待診斷", idleSub:"連上裝置後會自動跑完一套固定檢查",
+    connectHint:"手機/電腦用 USB-TTL 接裝置右上角 3 針（TXD/RXD/GND），插上後點下面的按鈕。診斷開始時會重啟裝置一次（約 3 秒），用來採集完整開機資訊。",
+    idleVerdict:"等待診斷", idleSub:"點右上角「未連線」連線裝置，之後會自動跑完一套固定檢查",
     bFail:"不通過", bWarn:"提示", bPass:"通過",
     resultsTitle:"檢查結果", resultsEmpty:"還沒有結果。",
     copyReport:"複製報告", downloadReport:"下載報告", copyLog:"複製日誌",
@@ -275,8 +281,8 @@ const T = {
   en: {
     brand:"Device Diagnostics", notConnected:"Disconnected", connected:"Connected", connecting:"Connecting…", noDevice:"No device selected",
     connectTitle:"Step 1 · Connect", runCheck:"Connect & check", disconnect:"Disconnect",
-    connectHint:"Wire USB-TTL to the 3 pins at the top-right of the board (TXD/RXD/GND), plug in, then press the button. The check reboots the device once (~3 s) to capture the full boot log.",
-    idleVerdict:"Waiting", idleSub:"A fixed check runs automatically once connected",
+    connectHint:"Wire USB-TTL to the 3 pins at the top-right of the board (TXD/RXD/GND), plug in, then press the button below. The check reboots the device once (~3 s) to capture the full boot log.",
+    idleVerdict:"Waiting", idleSub:"Tap the status at the top right to connect — the fixed check then runs automatically",
     bFail:"Failed", bWarn:"Warnings", bPass:"Passed",
     resultsTitle:"Results", resultsEmpty:"No result yet.",
     copyReport:"Copy report", downloadReport:"Download report", copyLog:"Copy log",
@@ -673,9 +679,11 @@ async function runCheck() {
   } catch (e) {
     logLine("[error] " + explainError(e));
     $("hint").textContent = explainError(e);
+    $("connMask").hidden = false;
   } finally {
     busy = false;
     $("btnRun").disabled = false;
+    if (connected) $("connMask").hidden = true;
   }
 }
 
@@ -818,8 +826,10 @@ $("lang").addEventListener("change", (e) => {
   localStorage.setItem("dc.lang", lang);
   applyI18n();
 });
+$("chip").addEventListener("click", () => { $("connMask").hidden = false; });
+$("btnConnClose").addEventListener("click", () => { $("connMask").hidden = true; });
 $("btnRun").addEventListener("click", runCheck);
-$("btnDisconnect").addEventListener("click", async () => { await teardown(); });
+$("btnDisconnect").addEventListener("click", async () => { await teardown(); $("connMask").hidden = true; });
 $("btnCopy").addEventListener("click", async () => {
   if (!lastResult) return;
   const ok = await copyText(reportText(lastResult));
