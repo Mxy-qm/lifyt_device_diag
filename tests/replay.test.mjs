@@ -158,7 +158,7 @@ test("LoRa 全零 DevEUI + 密码错误 + 默认 RTC", () => {
   const L = levels(v);
   assert.equal(L.get("id.devEui"), "fail");
   assert.equal(L.get("time.rtc"), "warn");
-  assert.equal(L.get("log.password"), "warn");
+  assert.equal(L.get("log.password"), "fail");   // 密码错误 = 解锁失败，不是"提示"
   assert.equal(v.verdict, "fail");
 });
 
@@ -305,6 +305,19 @@ test("入网成功 + 上报 ACK 会被认出", () => {
   assert.equal(L.get("net.csq"), "warn");
   assert.equal(L.get("sen.alarmDiff"), "warn");
   assert.equal(v.verdict, "warn");
+});
+
+test("ATZ 之后密码被吞：判定要 fail，不能被开头那次成功糊过去", () => {
+  const r = parseConsole(load("nb-locked-after-reboot.txt"));
+  assert.equal(r.flags.passwordAccepted, false, "最后一次解锁是失败的");
+  assert.equal(r.flags.passwordRejected, true);
+  assert.ok(r.flags.unlockAttempts >= 2, "至少含开头那次成功和后面失败的尝试");
+  const v = evaluate(r, { locked: true });
+  const L = levels(v);
+  assert.equal(L.get("log.password"), "fail");
+  assert.equal(v.verdict, "fail");
+  assert.equal(L.get("pwr.battery"), "skip", "没解锁时查询项应为未读");
+  assert.equal(v.locked, true);
 });
 
 test("掩码只留尾号", () => {

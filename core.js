@@ -7,7 +7,7 @@
  *  3. 本文件不碰 DOM，浏览器与 node 测试共用。
  */
 
-export const APP_VERSION = "0.2.0-alpha";
+export const APP_VERSION = "0.2.1-alpha";
 
 /** 设备控制台协议事实 */
 export const PROTOCOL = {
@@ -339,6 +339,16 @@ export function parseConsole(text, meta) {
     snr: toNum(pick(lastMatch(/AT\+SNR=\s*(-?\d+)/, raw)))
   };
 
+  // 解锁状态只看最后一次：ATZ 之后控制台会重新上锁，
+  // 用"全文出现过 Correct Password"会把 ATZ 之前那次成功当成结论（真机上就这么误判过）
+  const unlockSeq = [];
+  {
+    const re = /(Incorrect Password|Correct Password)/g;
+    let m = null;
+    while ((m = re.exec(raw)) !== null) unlockSeq.push(m[1] === "Correct Password");
+  }
+  const lastUnlock = unlockSeq.length ? unlockSeq[unlockSeq.length - 1] : null;
+
   // 区分"设备没回这个字段"和"设备回了但值是空的"——前者是没测到，后者才是异常
   const seen = {
     apn: /(?:^|\n)[ \t]*APN=/.test(tail),
@@ -375,8 +385,9 @@ export function parseConsole(text, meta) {
     network: network,
     flags: {
       cimiError: /TX> AT\+CIMI[^\n]*\n(?:[^\n]*\n){0,3}?\s*ERROR/i.test(all) || /\+CIMI:\s*ERROR/i.test(all),
-      passwordAccepted: /Correct Password/.test(raw),
-      passwordRejected: /Incorrect Password/.test(raw),
+      passwordAccepted: lastUnlock === true,
+      passwordRejected: lastUnlock === false,
+      unlockAttempts: unlockSeq.length,
       error: /(?:^|\n)[ \t]*AT_(?:PARAM_|BUSY_|RX_)?ERROR[ \t]*(?:\r?\n|$)/.test(raw),
       moduleError: /(?:^|\n)[ \t]*ERROR[ \t]*(?:\r?\n|$)/.test(raw),
       sentinelCsq: !!csqM && Number(csqM[1]) === 99,
@@ -572,7 +583,7 @@ export function evaluate(report, opts) {
   groups.push({
     id: "log",
     items: [
-      item("log.password", R.flags && R.flags.passwordAccepted ? "pass" : R.flags && R.flags.passwordRejected ? "warn" : "skip", null),
+      item("log.password", R.flags && R.flags.passwordAccepted ? "pass" : R.flags && R.flags.passwordRejected ? "fail" : "skip", null),
       item("log.errors", R.flags && R.flags.error ? "warn" : "pass", null),
       item("log.reboots", (R.banners || 0) >= 2 ? "warn" : "pass", R.banners || 0)
     ]

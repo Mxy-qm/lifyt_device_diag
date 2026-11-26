@@ -1,0 +1,37 @@
+TX> 83724
+Correct Password
+TX> ATZ
+DRAGINO TSE NB Device
+Image Version: TSE NB v1.4 260623
+Time: 26/11/26 16:14:08
+Angle
+Roll=-90.76 Pitch=109.82
+Internal Comparison Angle
+Roll:-90.39 Pitch:-148.93
+Device ID= 161628430
+Product ID= 16000695
+AuthInfo= LFTAN0064065Xch
+APN= JWE
+COPS= 45412
+Server IP & PORT= 47.91.203.178,6002
+454120820168114
+REBOOT_CAUSE_APPLICATION_AT
+Neul
+OK
++CSQ:8,99 Query whether the network is activated? 5
+Attached
+26/11/26 16:14:54
+Roll:-90.81 Pitch:110.90 Tem:24.06
+***** UpLinkCounter= 0 *****
+rssi=8
+Connect ACK OK
+Publish ACK OK
+TX> 83724
+TX> AT+VER=?
+Incorrect Password
+TX> AT+DEVID=?
+Incorrect Password
+TX> AT+BAT=?
+Incorrect Password
+TX> AT+TDC=?
+Incorrect Password

@@ -204,7 +204,7 @@ const T = {
       "net.reg.warn":"设备没注册到网络（+CEREG stat 0）。",
       "net.join.warn":"LoRaWAN 尚未入网。",
       "net.rssi.warn":"上一包的 RSSI 偏弱。",
-      "log.password.warn":"密码错误，后面的查询可能都拿不到数据。",
+      "log.password.fail":"AT 解锁失败：控制台一直是锁着的，后面的查询都没执行（命令被当成密码尝试）。先确认密码，或拔插一次重跑。",
       "log.errors.warn":"有 AT 命令被固件拒绝（AT_ERROR），可能是固件写法与剧本不一致。",
       "log.reboots.warn":"诊断过程中设备重启了（启动块出现多次），重启之后那几步没测到。",
       "expected":"期望" , "value":"实测"
@@ -260,7 +260,7 @@ const T = {
       "net.reg.warn":"裝置沒註冊到網路（+CEREG stat 0）。",
       "net.join.warn":"LoRaWAN 尚未入網。",
       "net.rssi.warn":"上一包的 RSSI 偏弱。",
-      "log.password.warn":"密碼錯誤，後面的查詢可能都拿不到資料。",
+      "log.password.fail":"AT 解鎖失敗：控制台一直是鎖著的，後面的查詢都沒執行（命令被當成密碼嘗試）。先確認密碼，或拔插一次重跑。",
       "log.errors.warn":"有 AT 命令被韌體拒絕（AT_ERROR），可能是韌體寫法與劇本不一致。",
       "log.reboots.warn":"診斷過程中裝置重啟了（開機區塊出現多次），重啟之後那幾步沒測到。",
       "expected":"期望", "value":"實測"
@@ -316,7 +316,7 @@ const T = {
       "net.reg.warn":"Device is not registered on the network (+CEREG stat 0).",
       "net.join.warn":"LoRaWAN not joined.",
       "net.rssi.warn":"Last packet RSSI is weak.",
-      "log.password.warn":"Wrong password — later queries may return nothing.",
+      "log.password.fail":"AT unlock failed: the console stayed locked, so every later query was treated as a password attempt. Check the password, or replug and re-run.",
       "log.errors.warn":"An AT command was rejected by the firmware (AT_ERROR) — the script form may not match this firmware.",
       "log.reboots.warn":"The device rebooted during the check (multiple boot blocks) — items after the reboot were not measured.",
       "expected":"expected", "value":"actual"
@@ -621,6 +621,11 @@ async function runSteps(steps) {
         await sleep(step.waitMs || 900);
         lines = lines.concat(deviceLines(mark2));
       }
+      if (/Incorrect Password/.test(lines.join("\n"))) {
+        logLine("[error] 控制台被锁（Incorrect Password），停止后续查询");
+        exchanges.push({ cmd: usedCmd, lines: lines });
+        throw new Error("AT locked");
+      }
       if (/^AT/i.test(usedCmd)) exchanges.push({ cmd: usedCmd, lines: lines });
     }
   }
@@ -642,7 +647,12 @@ async function waitForReady(maxMs) {
     }
     if (/UpLinkCounter=|Publish ACK OK|Connect ACK OK/i.test(buffer)) { await sleep(1500); return "uplink"; }
     if (/(?:^|\n)\s*Attached\s*(?:\r?\n|$)/i.test(buffer)) {
-      await sleep(6000);   // Attached 之后紧接着就是首次上报，再等它一下
+      // Attached 之后紧接着是 UpLinkCounter / Connect ACK / Publish ACK，等它把首包发完再动
+      const t1 = Date.now();
+      while (Date.now() - t1 < 8000) {
+        await sleep(200);
+        if (/Publish ACK OK|Connect ACK OK/i.test(buffer)) { await sleep(1000); return "uplink"; }
+      }
       return "attached";
     }
     const csq = buffer.match(/\+CSQ:(\d+),/g);
@@ -706,6 +716,29 @@ async function connectDevice() {
   }
 }
 
+/**
+ * 发密码并**确认**解锁成功。设备的 AT 门在 ATZ 后会重新上锁，
+ * 而密码在它忙（首次上报）时会被吞掉——所以必须看到 Correct Password 才算解锁，最多试 3 次。
+ */
+async function ensureUnlocked() {
+  if (!AT_PASSWORD) { logLine("[sys] 没有配置 AT 密码，跳过解锁"); return false; }
+  for (let i = 1; i <= 3; i++) {
+    const mark = buffer.length;
+    try { await sendLine(AT_PASSWORD); } catch (e) { logLine("[warn] 发送密码失败：" + ((e && e.message) || e)); }
+    const t0 = Date.now();
+    let rejected = false;
+    while (Date.now() - t0 < 2500) {
+      await sleep(150);
+      const chunk = buffer.slice(mark);
+      if (/Correct Password/.test(chunk)) { logLine("[sys] 已解锁（第 " + i + " 次）"); return true; }
+      if (/Incorrect Password/.test(chunk)) { rejected = true; break; }
+    }
+    logLine("[sys] 解锁未确认（第 " + i + "/3 次" + (rejected ? "，密码被拒" : "，无响应") + "），稍后重试");
+    await sleep(800);
+  }
+  return false;
+}
+
 /** 点「开始诊断」才跑：ATZ 抓启动块 → 等入网完成 → 解锁 → 逐项查询 → 出结论 */
 async function startDiagnosis() {
   if (busy || !connected) return;
@@ -716,9 +749,14 @@ async function startDiagnosis() {
   try {
     // ATZ 固定执行：不重启就拿不到完整启动块，启动块是这套诊断里最全的一份证据
     await runSteps(buildProbeScript({ password: AT_PASSWORD }));
-    const readyState = await waitForReady(60000);
+    const readyState = await waitForReady(90000);
     logLine("[sys] 设备状态: " + readyState);
-    await runSteps(buildUnlockScript(AT_PASSWORD));
+    const unlocked = await ensureUnlocked();
+    if (!unlocked) {
+      logLine("[error] AT 没解锁：后面的查询不再执行（否则每条命令都会被当成密码尝试）");
+      finalize();
+      return;
+    }
     const variant = detectVariant(buffer);
     logLine("[sys] 变体判定: " + variant);
     const plan = buildPlanScript(variant === "unknown" ? "nb" : variant, { reboot: false });
@@ -823,6 +861,7 @@ function reportText(res, rawLog) {
     new Date().toISOString(),
     "variant: " + report.variant + "  firmware: " + (report.firmware || "-"),
     "verdict: " + verdict.verdict.toUpperCase() + "  (fail=" + verdict.counts.fail + " warn=" + verdict.counts.warn + " pass=" + verdict.counts.pass + " skip=" + (verdict.counts.skip || 0) + ")",
+    verdict.locked ? "!! AT 未解锁：查询类项目没有执行（电池/间隔/阈值/IMEI/ICCID/注册等）" : "",
     ""
   ];
   for (const g of verdict.groups) {
