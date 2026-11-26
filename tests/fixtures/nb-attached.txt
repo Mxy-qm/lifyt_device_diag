@@ -1,0 +1,43 @@
+DRAGINO TSE NB Device
+Image Version: TSE NB v1.4 260623
+Time: 26/11/26 15:39:37
+Angle
+Roll=-90.62 Pitch=106.53
+Internal Comparison Angle
+Roll:-90.39 Pitch:-148.93
+Device ID= 161628430
+Product ID= 16000695
+AuthInfo= LFTAN0064065Xch
+APN= JWE
+COPS= 45412
+Server IP & PORT= 47.91.203.178,6002
+454120820168114
+REBOOT_CAUSE_APPLICATION_AT
+Neul
+OK
+Successfully set to the APN
+Successfully set to the COPS
++CSQ:8,99 Query whether the network is activated? 1
++CSQ:9,99 Query whether the network is activated? 2
++CSQ:8,99 Query whether the network is activated? 3
+Attached
+26/11/26 15:40:02
+Roll:-90.70 Pitch:108.48 Tem:23.94
+***** UpLinkCounter= 0 *****
+rssi=9Connect ACK OK
+Publish ACK OK
+TX> AT+CTANGLE=?
+10
+OK
+TX> AT+ICANGLE=?
+Roll:-90.39 Pitch:-148.93
+OK
+TX> AT+BAT=?
+BAT voltage=3683mV
+OK
+TX> AT+TDC=?
+10800000
+OK
+TX> AT+STDC=?
+3600000
+OK

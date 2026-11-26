@@ -7,7 +7,7 @@
  *  3. 本文件不碰 DOM，浏览器与 node 测试共用。
  */
 
-export const APP_VERSION = "0.1.8-alpha";
+export const APP_VERSION = "0.1.9-alpha";
 
 /** 设备控制台协议事实 */
 export const PROTOCOL = {
@@ -328,6 +328,9 @@ export function parseConsole(text, meta) {
     imsi: pick(lastMatch(/(?:\+CIMI:\s*|IMSI[:=]\s*)(\d{14,16})/i, raw)) || pick(lastMatch(/(?:^|\n)[ \t]*(\d{15})[ \t]*(?=\r?\n)/, tail)),
     iccid: iccidM ? iccidM[1] : null,
     njs: pick(lastMatch(/AT\+NJS=\s*(\d)/, raw)),
+    attached: /(?:^|\n)[ \t]*Attached[ \t]*(?:\r?\n|$)/im.test(raw),
+    uplinkAck: /(?:Publish ACK OK|Connect ACK OK)/i.test(raw),
+    uplinkCounter: toNum(pick(lastMatch(/UpLinkCounter=[ \t]*(\d+)/i, raw))),
     cereg: (function () {
       const m = lastMatch(/\+CEREG:\s*(\d+),(\d+)/, raw);
       return m ? { n: Number(m[1]), stat: Number(m[2]) } : null;
@@ -552,6 +555,8 @@ export function evaluate(report, opts) {
     if (net.cfun !== null && net.cfun !== undefined) netItems.push(item("net.cfun", net.cfun === 1 ? "pass" : "fail", net.cfun));
     if (net.cereg) netItems.push(item("net.reg", net.cereg.stat === 1 || net.cereg.stat === 5 ? "pass" : "warn", "stat " + net.cereg.stat));
     else netItems.push(skip("net.reg"));
+    const uplinkLevel = net.uplinkAck ? "pass" : net.attached ? "pass" : "skip";
+    netItems.push(item("net.uplink", uplinkLevel, net.uplinkAck ? "ACK OK" : net.attached ? "Attached" : null));
     if (net.imsi) netItems.push(item("net.sim", "pass", net.imsi));
     else if (seen.cimi) netItems.push(item("net.sim", "warn", null));
     else netItems.push(skip("net.sim"));

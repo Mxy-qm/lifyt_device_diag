@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.1.9-alpha — 2026-11-26（修正诊断时序）
+
+- 修复（重要）：ATZ 之后设备要跑完整流程——配 APN → 配 COPS → 每 5 秒轮询 CSQ → 入网 → 首次上报，约 25~30 秒。原来第 12 秒就把查询全丢过去，正好撞在它自己的流程里，响应被吃掉。现在改为**等就绪再问**：出现 `Publish ACK OK` / `Connect ACK OK` / `Attached` 才继续，最多等 60 秒；连续 3 次 `CSQ 99,99` 判定没驻网提前结束；全程在日志里报进度
+- 新增：`上报确认` 判定项——识别 `Attached`、`Connect ACK OK`、`Publish ACK OK`、`UpLinkCounter`，能直接证明"这台设备端到端通了"
+
 ## v0.1.8-alpha — 2026-11-25（第三轮真机日志：v1.3 老固件）
 
 - 变更：**去掉裸写备选**（`AT+X`）。固件语义里裸写是 "Run"、有副作用，v1.3 上实测直接 AT_ERROR 并触发了一次重启（`REBOOT_CAUSE_APPLICATION_AT`），把后面的检查全打断

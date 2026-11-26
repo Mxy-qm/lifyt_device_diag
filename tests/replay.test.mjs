@@ -290,6 +290,23 @@ test("诊断中途重启会被点出来", () => {
   assert.equal(L.get("log.reboots"), "warn");
 });
 
+test("入网成功 + 上报 ACK 会被认出", () => {
+  const r = parseConsole(load("nb-attached.txt"));
+  assert.equal(r.network.attached, true);
+  assert.equal(r.network.uplinkAck, true);
+  assert.equal(r.network.uplinkCounter, 0);
+  assert.deepEqual(r.network.csq, { rssi: 8, ber: 99 });
+  assert.equal(r.config.tdc, 10800000);
+  assert.equal(r.config.stdc, 3600000);
+  assert.equal(r.batteryMv, 3683);
+  const v = evaluate(r, { locked: false });
+  const L = levels(v);
+  assert.equal(L.get("net.uplink"), "pass");
+  assert.equal(L.get("net.csq"), "warn");
+  assert.equal(L.get("sen.alarmDiff"), "warn");
+  assert.equal(v.verdict, "warn");
+});
+
 test("掩码只留尾号", () => {
   assert.equal(maskValue("869930000000117"), "…117");
   assert.equal(maskValue(null), "—");
