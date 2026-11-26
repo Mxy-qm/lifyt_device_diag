@@ -157,6 +157,16 @@ const T = {
     brand:"设备诊断", notConnected:"未连接", connected:"已连接", connecting:"连接中…", noDevice:"没有选中设备",
     connectTitle:"连接设备", connectOnly:"连接设备", startCheck:"开始诊断", disconnect:"断开",
     connInfoIdle:"先点右上角「未连接」连接设备", connInfoReady:"已连接，点「开始诊断」", connInfoRunning:"诊断中…",
+    logConnected:"已连接 @", logOpenFail:"打开失败", logReadStop:"读流停止", logSendFail:"发送失败",
+    logSkipCmd:"剧本里出现非查询命令", logLockedAbort:"控制台被锁（Incorrect Password），停止后续查询",
+    logWaitReady:"等待设备启动并完成入网（最多 N 秒）…", logNoAttach:"连续 N 次 CSQ 99,99：设备没驻网，不再等",
+    logWaitTick:"等待中… Ns", logReadyState:"设备状态", logVariant:"变体判定",
+    logWebSerial:"WebUSB 打不开，改用 Web Serial 重试", logNoPassword:"没有配置 AT 密码，跳过解锁",
+    logPwdSendFail:"发送密码失败", logUnlocked:"已解锁（第 N 次）", logUnlockRetry:"解锁未确认（第 N/3 次）",
+    logUnlockRejected:"密码被拒", logUnlockNoResp:"无响应", logGiveUpUnlock:"AT 没解锁：后面的查询不再执行（否则每条命令都会被当成密码尝试）",
+    logProfileBad:"配置里的 profile 不是合法 JSON",
+    errDenied:"Access denied：接口被占用。关掉其它串口工具/旧标签页，拔插一次再试", errNetwork:"NetworkError：USB 会话抖动，拔插一次再试",
+    reportLocked:"!! AT 未解锁：查询类项目没有执行（电池/间隔/阈值/注册等）",
     connectHint:"手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点下面的按钮。诊断开始时会重启设备一次（约 3 秒），用来采集完整启动信息。",
     idleVerdict:"等待诊断", idleSub:"连接设备后点「开始诊断」，会跑一套固定检查",
     bFail:"不通过", bWarn:"提示", bPass:"通过",
@@ -214,6 +224,16 @@ const T = {
     brand:"設備診斷", notConnected:"未連線", connected:"已連線", connecting:"連線中…", noDevice:"沒有選中裝置",
     connectTitle:"連線裝置", connectOnly:"連線裝置", startCheck:"開始診斷", disconnect:"中斷",
     connInfoIdle:"先點右上角「未連線」連線裝置", connInfoReady:"已連線，點「開始診斷」", connInfoRunning:"診斷中…",
+    logConnected:"已連線 @", logOpenFail:"開啟失敗", logReadStop:"讀流停止", logSendFail:"傳送失敗",
+    logSkipCmd:"劇本裡出現非查詢命令", logLockedAbort:"控制台被鎖（Incorrect Password），停止後續查詢",
+    logWaitReady:"等待裝置開機並完成入網（最多 N 秒）…", logNoAttach:"連續 N 次 CSQ 99,99：裝置沒駐網，不再等",
+    logWaitTick:"等待中… Ns", logReadyState:"裝置狀態", logVariant:"變體判定",
+    logWebSerial:"WebUSB 打不開，改用 Web Serial 重試", logNoPassword:"沒有設定 AT 密碼，跳過解鎖",
+    logPwdSendFail:"傳送密碼失敗", logUnlocked:"已解鎖（第 N 次）", logUnlockRetry:"解鎖未確認（第 N/3 次）",
+    logUnlockRejected:"密碼被拒", logUnlockNoResp:"無回應", logGiveUpUnlock:"AT 沒解鎖：後面的查詢不再執行（否則每條命令都會被當成密碼嘗試）",
+    logProfileBad:"設定裡的 profile 不是合法 JSON",
+    errDenied:"Access denied：介面被佔用。關掉其它序列埠工具/舊分頁，拔插一次再試", errNetwork:"NetworkError：USB 連線抖動，拔插一次再試",
+    reportLocked:"!! AT 未解鎖：查詢類項目沒有執行（電池/間隔/閾值/註冊等）",
     connectHint:"手機/電腦用 USB-TTL 接裝置右上角 3 針（TXD/RXD/GND），插上後點下面的按鈕。診斷開始時會重啟裝置一次（約 3 秒），用來採集完整開機資訊。",
     idleVerdict:"等待診斷", idleSub:"連線裝置後點「開始診斷」，會跑一套固定檢查",
     bFail:"不通過", bWarn:"提示", bPass:"通過",
@@ -270,6 +290,16 @@ const T = {
     brand:"Device Diagnostics", notConnected:"Disconnected", connected:"Connected", connecting:"Connecting…", noDevice:"No device selected",
     connectTitle:"Connect device", connectOnly:"Connect", startCheck:"Start check", disconnect:"Disconnect",
     connInfoIdle:"Connect the device (top right) first", connInfoReady:"Connected — press Start check", connInfoRunning:"Checking…",
+    logConnected:"Connected @", logOpenFail:"open failed", logReadStop:"read stopped", logSendFail:"send failed",
+    logSkipCmd:"non-query command in script", logLockedAbort:"Console is locked (Incorrect Password) — stopping further queries",
+    logWaitReady:"Waiting for the device to boot and attach (max N s)…", logNoAttach:"N consecutive CSQ 99,99 — not attached, stop waiting",
+    logWaitTick:"Waiting… Ns", logReadyState:"device state", logVariant:"variant",
+    logWebSerial:"WebUSB failed, retrying over Web Serial", logNoPassword:"no AT password configured — skipping unlock",
+    logPwdSendFail:"failed to send password", logUnlocked:"unlocked (attempt N)", logUnlockRetry:"unlock not confirmed (attempt N/3)",
+    logUnlockRejected:"password rejected", logUnlockNoResp:"no response", logGiveUpUnlock:"AT unlock failed — later queries are skipped (otherwise every command is treated as a password attempt)",
+    logProfileBad:"profile in config is not valid JSON",
+    errDenied:"Access denied — the interface is busy. Close other serial tools/old tabs, replug and retry.", errNetwork:"NetworkError — USB session glitch. Replug and retry.",
+    reportLocked:"!! AT not unlocked: query-based items were not executed (battery/interval/threshold/registration)",
     connectHint:"Wire USB-TTL to the 3 pins at the top-right of the board (TXD/RXD/GND), plug in, then press the button below. The check reboots the device once (~3 s) to capture the full boot log.",
     idleVerdict:"Waiting", idleSub:"Connect the device, then press Start check",
     bFail:"Failed", bWarn:"Warnings", bPass:"Passed",
@@ -508,8 +538,8 @@ function explainError(e) {
   const name = (e && e.name) || "Error";
   const msg = (e && e.message) || String(e);
   if (name === "NotFoundError") return t("noDevice");
-  if (name === "SecurityError") return "Access denied（接口被占用：关掉其它串口工具/旧标签页，拔插一次再试）";
-  if (name === "NetworkError") return "NetworkError（USB 会话抖动：拔插一次再试）";
+  if (name === "SecurityError") return t("errDenied");
+  if (name === "NetworkError") return t("errNetwork");
   return name + ": " + msg;
 }
 
@@ -545,7 +575,7 @@ async function openPort(adapter, baudRate) {
       return;
     } catch (e) {
       lastErr = e;
-      logLine("[open] 失败 " + (i + 1) + "/" + delays.length + ": " + ((e && e.name) || "") + " " + ((e && e.message) || e));
+      logLine("[open] " + t("logOpenFail") + " " + (i + 1) + "/" + delays.length + ": " + ((e && e.name) || "") + " " + ((e && e.message) || e));
       if (!(e && e.name === "SecurityError")) break;
     }
   }
@@ -571,7 +601,7 @@ function pipeRead(p) {
         }
       }
     } catch (e) {
-      if (connected) logLine("[read] 停止: " + ((e && e.message) || e));
+      if (connected) logLine("[read] " + t("logReadStop") + ": " + ((e && e.message) || e));
     }
   })();
 }
@@ -601,10 +631,10 @@ async function runSteps(steps) {
     if (step.kind === "listen") { await sleep(step.ms); continue; }
     if (step.kind === "send") {
       const line = step.line;
-      if (!step.raw && !isAllowedCommand(line)) { logLine("[skip] 剧本里出现非查询命令：" + line); continue; }
+      if (!step.raw && !isAllowedCommand(line)) { logLine("[skip] " + t("logSkipCmd") + " " + line); continue; }
       const mark = buffer.length;
       const usedCmd = line;
-      try { await sendLine(line); } catch (e) { if (!step.bestEffort) throw e; logLine("[warn] 发送失败：" + line); }
+      try { await sendLine(line); } catch (e) { if (!step.bestEffort) throw e; logLine("[warn] " + t("logSendFail") + " " + line); }
       await sleep(step.waitMs || 500);
       // 注意：这里不再有"换成裸写 AT+X 再试"的备选。
       // 固件语义里 AT+X 是 Run（有副作用），v1.3 实测会 AT_ERROR 甚至触发重启。
@@ -622,7 +652,7 @@ async function runSteps(steps) {
         lines = lines.concat(deviceLines(mark2));
       }
       if (/Incorrect Password/.test(lines.join("\n"))) {
-        logLine("[error] 控制台被锁（Incorrect Password），停止后续查询");
+        logLine("[error] " + t("logLockedAbort"));
         exchanges.push({ cmd: usedCmd, lines: lines });
         throw new Error("AT locked");
       }
@@ -639,7 +669,7 @@ async function runSteps(steps) {
 async function waitForReady(maxMs) {
   const start = Date.now();
   let lastLen = 0, lastChange = Date.now(), lastProgress = 0, sentinel = 0;
-  logLine("[sys] 等待设备启动并完成入网（最多 " + Math.round((maxMs || 60000) / 1000) + " 秒）…");
+  logLine("[sys] " + t("logWaitReady").replace("N", String(Math.round((maxMs || 60000) / 1000))));
   while (Date.now() - start < (maxMs || 60000)) {
     await sleep(300);
     if (/Enter Password to Active AT Commands/i.test(buffer) && /REBOOT_CAUSE|Neul/.test(buffer)) {
@@ -664,14 +694,14 @@ async function waitForReady(maxMs) {
       sentinel = csq.length;
       if (/\+CSQ:99,/.test(csq[csq.length - 1])) {
         const n = (buffer.match(/\+CSQ:99,/g) || []).length;
-        if (n >= 3) { logLine("[sys] 连续 " + n + " 次 CSQ 99,99：设备没驻网，不再等"); return "no-attach"; }
+        if (n >= 3) { logLine("[sys] " + t("logNoAttach").replace("N", String(n))); return "no-attach"; }
       }
     }
     if (buffer.length !== lastLen) {
       lastLen = buffer.length;
       lastChange = Date.now();
       const sec = Math.round((Date.now() - start) / 1000);
-      if (sec - lastProgress >= 5) { lastProgress = sec; logLine("[sys] 等待中… " + sec + "s"); }
+      if (sec - lastProgress >= 5) { lastProgress = sec; logLine("[sys] " + t("logWaitTick").replace("Ns", sec + "s")); }
     } else if (Date.now() - lastChange >= 12000) {
       return "idle";
     }
@@ -694,7 +724,7 @@ async function connectDevice() {
     } catch (e) {
       // Windows 装了 WCH 串口驱动时，CH340 常被系统当成 COM 口，WebUSB 拿不到接口
       if (!navigator.serial) throw e;
-      logLine("[sys] WebUSB 打不开（" + ((e && e.name) || e) + "），改用 Web Serial 重试");
+      logLine("[sys] " + t("logWebSerial") + " (" + ((e && e.name) || e) + ")");
       try { await adapter.port.close(); } catch (e2) {}
       adapter = await requestSerialAdapter();
       await openPort(adapter, PROTOCOL.baudRate);
@@ -705,7 +735,7 @@ async function connectDevice() {
     connected = true;
     setChip(true);
     $("btnDisconnect").disabled = false;
-    logLine("[sys] 已连接 @" + PROTOCOL.baudRate);
+    logLine("[sys] " + t("logConnected") + PROTOCOL.baudRate);
     await sleep(300);
     $("connMask").hidden = true;
     updateRunBar();
@@ -725,19 +755,19 @@ async function connectDevice() {
  * 而密码在它忙（首次上报）时会被吞掉——所以必须看到 Correct Password 才算解锁，最多试 3 次。
  */
 async function ensureUnlocked() {
-  if (!AT_PASSWORD) { logLine("[sys] 没有配置 AT 密码，跳过解锁"); return false; }
+  if (!AT_PASSWORD) { logLine("[sys] " + t("logNoPassword")); return false; }
   for (let i = 1; i <= 3; i++) {
     const mark = buffer.length;
-    try { await sendLine(AT_PASSWORD); } catch (e) { logLine("[warn] 发送密码失败：" + ((e && e.message) || e)); }
+    try { await sendLine(AT_PASSWORD); } catch (e) { logLine("[warn] " + t("logPwdSendFail") + ": " + ((e && e.message) || e)); }
     const t0 = Date.now();
     let rejected = false;
     while (Date.now() - t0 < 2500) {
       await sleep(150);
       const chunk = buffer.slice(mark);
-      if (/Correct Password/.test(chunk)) { logLine("[sys] 已解锁（第 " + i + " 次）"); return true; }
+      if (/Correct Password/.test(chunk)) { logLine("[sys] " + t("logUnlocked").replace("N", String(i))); return true; }
       if (/Incorrect Password/.test(chunk)) { rejected = true; break; }
     }
-    logLine("[sys] 解锁未确认（第 " + i + "/3 次" + (rejected ? "，密码被拒" : "，无响应") + "），稍后重试");
+    logLine("[sys] " + t("logUnlockRetry").replace("N", String(i)) + " - " + (rejected ? t("logUnlockRejected") : t("logUnlockNoResp")));
     await sleep(800);
   }
   return false;
@@ -754,15 +784,15 @@ async function startDiagnosis() {
     // ATZ 固定执行：不重启就拿不到完整启动块，启动块是这套诊断里最全的一份证据
     await runSteps(buildProbeScript({ password: AT_PASSWORD }));
     const readyState = await waitForReady(90000);
-    logLine("[sys] 设备状态: " + readyState);
+    logLine("[sys] " + t("logReadyState") + ": " + readyState);
     const unlocked = await ensureUnlocked();
     if (!unlocked) {
-      logLine("[error] AT 没解锁：后面的查询不再执行（否则每条命令都会被当成密码尝试）");
+      logLine("[error] " + t("logGiveUpUnlock"));
       finalize();
       return;
     }
     const variant = detectVariant(buffer);
-    logLine("[sys] 变体判定: " + variant);
+    logLine("[sys] " + t("logVariant") + ": " + variant);
     const plan = buildPlanScript(variant === "unknown" ? "nb" : variant, { reboot: false });
     await runSteps(plan);
     finalize();
@@ -788,7 +818,7 @@ function readProfile() {
   const p = CFG.profile;
   if (!p) return {};
   if (typeof p === "object") return p;
-  try { return JSON.parse(p); } catch (e) { logLine("[warn] 配置里的 profile 不是合法 JSON：" + ((e && e.message) || e)); return {}; }
+  try { return JSON.parse(p); } catch (e) { logLine("[warn] " + t("logProfileBad") + ": " + ((e && e.message) || e)); return {}; }
 }
 
 function finalize() {
@@ -865,7 +895,7 @@ function reportText(res, rawLog) {
     new Date().toISOString(),
     "variant: " + report.variant + "  firmware: " + (report.firmware || "-"),
     "verdict: " + verdict.verdict.toUpperCase() + "  (fail=" + verdict.counts.fail + " warn=" + verdict.counts.warn + " pass=" + verdict.counts.pass + " skip=" + (verdict.counts.skip || 0) + ")",
-    verdict.locked ? "!! AT 未解锁：查询类项目没有执行（电池/间隔/阈值/IMEI/ICCID/注册等）" : "",
+    verdict.locked ? t("reportLocked") : "",
     ""
   ];
   for (const g of verdict.groups) {
