@@ -78,6 +78,14 @@
   <div class="banner" data-i18n="alphaBanner">Alpha 内测版：判定口径与文案可能变动，结论仅供内部参考。</div>
 
   <section class="card">
+    <div class="row">
+      <button id="btnStart" disabled data-i18n="startCheck">开始诊断</button>
+      <span class="muted" id="connInfo" data-i18n="connInfoIdle">先点右上角连接设备</span>
+    </div>
+    <div id="logbox" style="margin-top:10px"></div>
+  </section>
+
+  <section class="card">
     <div id="verdict" class="verdict idle">
       <div class="vtext">
         <div class="big" id="verdictText" data-i18n="idleVerdict">等待诊断</div>
@@ -105,23 +113,6 @@
     </div>
   </section>
 
-  <details class="card">
-    <summary data-i18n="rawTitle">原始串口日志</summary>
-    <div class="row" style="margin-top:10px">
-      <button id="btnCopyLog" class="ghost" data-i18n="copyLog" disabled>复制日志</button>
-    </div>
-    <div id="logbox"></div>
-  </details>
-
-  <details class="card">
-    <summary data-i18n="replayTitle">回放模式（用已有日志验证判定）</summary>
-    <div class="muted" style="margin:8px 0" data-i18n="replayHint">把设备日志粘进来，或用文件导入，走同一套解析与判定，不需要连硬件。</div>
-    <input id="replayFile" type="file" accept=".txt,.log,.md">
-    <textarea id="replayText" data-i18n-placeholder="replayPlaceholder" placeholder="粘贴设备串口日志…"></textarea>
-    <div class="row" style="margin-top:8px">
-      <button id="btnReplay" class="ghost" data-i18n="runReplay">用这段日志诊断</button>
-    </div>
-  </details>
 </main>
 
 <div id="connMask" class="mask" hidden>
@@ -129,7 +120,7 @@
     <div style="font-weight:700;font-size:1.05rem;margin-bottom:6px" data-i18n="connectTitle">连接设备</div>
     <div class="muted" id="hint" data-i18n="connectHint">手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点下面的按钮。</div>
     <div class="row" style="margin-top:12px">
-      <button id="btnRun" data-i18n="runCheck">连接并诊断</button>
+      <button id="btnRun" data-i18n="connectOnly">连接设备</button>
       <button id="btnDisconnect" class="ghost" data-i18n="disconnect" disabled>断开</button>
       <button id="btnConnClose" class="ghost" data-i18n="close">关闭</button>
     </div>
@@ -149,7 +140,6 @@
 
 <footer>
   <div id="verLine"></div>
-  <div data-i18n="footerNote">纯前端单页：不联网、不上传日志。判定规则见 docs/protocol-notes.md。</div>
 </footer>
 
 <script src="./config.js"></script>
@@ -165,16 +155,14 @@ import {
 const T = {
   zh: {
     brand:"设备诊断", notConnected:"未连接", connected:"已连接", connecting:"连接中…", noDevice:"没有选中设备",
-    connectTitle:"第一步 · 连接设备", runCheck:"连接并诊断", disconnect:"断开",
+    connectTitle:"连接设备", connectOnly:"连接设备", startCheck:"开始诊断", disconnect:"断开",
+    connInfoIdle:"先点右上角「未连接」连接设备", connInfoReady:"已连接，点「开始诊断」", connInfoRunning:"诊断中…",
     connectHint:"手机/电脑用 USB-TTL 接设备右上角 3 针（TXD/RXD/GND），插上后点下面的按钮。诊断开始时会重启设备一次（约 3 秒），用来采集完整启动信息。",
-    idleVerdict:"等待诊断", idleSub:"点右上角「未连接」连接设备，之后会自动跑完一套固定检查",
+    idleVerdict:"等待诊断", idleSub:"连接设备后点「开始诊断」，会跑一套固定检查",
     bFail:"不通过", bWarn:"提示", bPass:"通过",
     resultsTitle:"检查结果", resultsEmpty:"还没有结果。",
-    copyReport:"复制报告", downloadReport:"下载报告", copyLog:"复制日志",
-    rawTitle:"原始串口日志", replayTitle:"回放模式（用已有日志验证判定）",
-    replayHint:"把设备日志粘进来，或用文件导入，走同一套解析与判定，不需要连硬件。",
-    replayPlaceholder:"粘贴设备串口日志…", runReplay:"用这段日志诊断",
-    footerNote:"纯前端单页：不联网、不上传日志。判定规则见 docs/protocol-notes.md。",
+    copyReport:"复制报告", downloadReport:"下载报告",
+
     alphaBanner:"Alpha 内测版：判定口径与文案可能变动，结论仅供内部参考。",
     lockedTitle:"未解锁 AT：深度项本次没有检查",
     lockedBody:"电池电压、SIM/网络、采集与上报间隔、角度阈值这类「要问设备才拿得到」的项没有测，结果里标成「未检查」。这不是设备的问题。",
@@ -224,16 +212,14 @@ const T = {
   },
   zhHant: {
     brand:"設備診斷", notConnected:"未連線", connected:"已連線", connecting:"連線中…", noDevice:"沒有選中裝置",
-    connectTitle:"第一步 · 連線裝置", runCheck:"連線並診斷", disconnect:"中斷",
+    connectTitle:"連線裝置", connectOnly:"連線裝置", startCheck:"開始診斷", disconnect:"中斷",
+    connInfoIdle:"先點右上角「未連線」連線裝置", connInfoReady:"已連線，點「開始診斷」", connInfoRunning:"診斷中…",
     connectHint:"手機/電腦用 USB-TTL 接裝置右上角 3 針（TXD/RXD/GND），插上後點下面的按鈕。診斷開始時會重啟裝置一次（約 3 秒），用來採集完整開機資訊。",
-    idleVerdict:"等待診斷", idleSub:"點右上角「未連線」連線裝置，之後會自動跑完一套固定檢查",
+    idleVerdict:"等待診斷", idleSub:"連線裝置後點「開始診斷」，會跑一套固定檢查",
     bFail:"不通過", bWarn:"提示", bPass:"通過",
     resultsTitle:"檢查結果", resultsEmpty:"還沒有結果。",
-    copyReport:"複製報告", downloadReport:"下載報告", copyLog:"複製日誌",
-    rawTitle:"原始序列埠日誌", replayTitle:"回放模式（用既有日誌驗證判定）",
-    replayHint:"把裝置日誌貼進來，或用檔案匯入，走同一套解析與判定，不需要連硬體。",
-    replayPlaceholder:"貼上裝置序列埠日誌…", runReplay:"用這段日誌診斷",
-    footerNote:"純前端單頁：不連網、不上傳日誌。判定規則見 docs/protocol-notes.md。",
+    copyReport:"複製報告", downloadReport:"下載報告",
+
     alphaBanner:"Alpha 內測版：判定口徑與文案可能變動，結論僅供內部參考。",
     lockedTitle:"未解鎖 AT：深度項本次沒有檢查",
     lockedBody:"電池電壓、SIM/網路、採集與上報間隔、角度閾值這類「要問裝置才拿得到」的項沒有測，結果裡標成「未檢查」。這不是裝置的問題。",
@@ -282,16 +268,14 @@ const T = {
   },
   en: {
     brand:"Device Diagnostics", notConnected:"Disconnected", connected:"Connected", connecting:"Connecting…", noDevice:"No device selected",
-    connectTitle:"Step 1 · Connect", runCheck:"Connect & check", disconnect:"Disconnect",
+    connectTitle:"Connect device", connectOnly:"Connect", startCheck:"Start check", disconnect:"Disconnect",
+    connInfoIdle:"Connect the device (top right) first", connInfoReady:"Connected — press Start check", connInfoRunning:"Checking…",
     connectHint:"Wire USB-TTL to the 3 pins at the top-right of the board (TXD/RXD/GND), plug in, then press the button below. The check reboots the device once (~3 s) to capture the full boot log.",
-    idleVerdict:"Waiting", idleSub:"Tap the status at the top right to connect — the fixed check then runs automatically",
+    idleVerdict:"Waiting", idleSub:"Connect the device, then press Start check",
     bFail:"Failed", bWarn:"Warnings", bPass:"Passed",
     resultsTitle:"Results", resultsEmpty:"No result yet.",
-    copyReport:"Copy report", downloadReport:"Download report", copyLog:"Copy log",
-    rawTitle:"Raw serial log", replayTitle:"Replay mode (validate with a saved log)",
-    replayHint:"Paste a device log or import a file; same parser and rules, no hardware needed.",
-    replayPlaceholder:"Paste device serial log…", runReplay:"Check this log",
-    footerNote:"Single-page frontend: no network, no uploads. Rule notes in docs/protocol-notes.md.",
+    copyReport:"Copy report", downloadReport:"Download report",
+
     alphaBanner:"Alpha: wording and thresholds may change; for internal use.",
     lockedTitle:"AT not unlocked — deep items were not checked",
     lockedBody:"Battery, SIM/network, collection/report intervals and the angle threshold are only available by querying the device. They were not measured and are marked “not checked”. This is not a device fault.",
@@ -382,6 +366,7 @@ function applyI18n() {
   });
   setChip(connected);
   if (lastResult) render(lastResult);
+  updateRunBar();
 }
 
 function setChip(on, pending) {
@@ -607,6 +592,7 @@ async function teardown() {
   reader = null; writer = null; port = null; connected = false;
   setChip(false);
   $("btnDisconnect").disabled = true;
+  updateRunBar();
 }
 
 /* ---------------- 诊断流程 ---------------- */
@@ -679,13 +665,13 @@ async function waitForReady(maxMs) {
   return "timeout";
 }
 
-async function runCheck() {
-  if (busy) return;
+/** 只连接，不诊断 */
+async function connectDevice() {
+  if (busy || connected) return;
   busy = true;
   $("btnRun").disabled = true;
   buffer = ""; lineBuf = ""; display = ""; lastResult = null; exchanges = [];
   $("logbox").textContent = "";
-  const password = AT_PASSWORD;
   try {
     setChip(false, true);
     let adapter = await requestAdapter();
@@ -706,11 +692,33 @@ async function runCheck() {
     setChip(true);
     $("btnDisconnect").disabled = false;
     logLine("[sys] 已连接 @" + PROTOCOL.baudRate);
+    await sleep(300);
+    $("connMask").hidden = true;
+    updateRunBar();
+  } catch (e) {
+    logLine("[error] " + explainError(e));
+    $("hint").textContent = explainError(e);
+    $("connMask").hidden = false;
+  } finally {
+    busy = false;
+    $("btnRun").disabled = false;
+    updateRunBar();
+  }
+}
+
+/** 点「开始诊断」才跑：ATZ 抓启动块 → 等入网完成 → 解锁 → 逐项查询 → 出结论 */
+async function startDiagnosis() {
+  if (busy || !connected) return;
+  busy = true;
+  buffer = ""; lineBuf = ""; display = ""; lastResult = null; exchanges = [];
+  $("logbox").textContent = "";
+  updateRunBar();
+  try {
     // ATZ 固定执行：不重启就拿不到完整启动块，启动块是这套诊断里最全的一份证据
-    await runSteps(buildProbeScript({ password: password }));
+    await runSteps(buildProbeScript({ password: AT_PASSWORD }));
     const readyState = await waitForReady(60000);
     logLine("[sys] 设备状态: " + readyState);
-    await runSteps(buildUnlockScript(password));
+    await runSteps(buildUnlockScript(AT_PASSWORD));
     const variant = detectVariant(buffer);
     logLine("[sys] 变体判定: " + variant);
     const plan = buildPlanScript(variant === "unknown" ? "nb" : variant, { reboot: false });
@@ -719,12 +727,19 @@ async function runCheck() {
   } catch (e) {
     logLine("[error] " + explainError(e));
     $("hint").textContent = explainError(e);
-    $("connMask").hidden = false;
   } finally {
     busy = false;
-    $("btnRun").disabled = false;
-    if (connected) $("connMask").hidden = true;
+    updateRunBar();
   }
+}
+
+/** 「开始诊断」按钮与那行提示的可用状态 */
+function updateRunBar() {
+  const stamp = new Date().toLocaleTimeString();
+  $("btnStart").disabled = !connected || busy;
+  if (!connected) $("connInfo").textContent = t("connInfoIdle");
+  else if (busy) $("connInfo").textContent = t("connInfoRunning");
+  else $("connInfo").textContent = t("connInfoReady") + " · " + stamp;
 }
 
 function readProfile() {
@@ -799,10 +814,9 @@ function render(res) {
   if (!verdict.groups.some((g) => g.items.length)) body.textContent = t("resultsEmpty");
   $("btnCopy").disabled = false;
   $("btnDownload").disabled = false;
-  $("btnCopyLog").disabled = buffer.trim().length === 0;
 }
 
-function reportText(res) {
+function reportText(res, rawLog) {
   const { report, verdict } = res;
   const L = [
     "LiFY-T device diag " + APP_VERSION,
@@ -820,7 +834,9 @@ function reportText(res) {
     }
     L.push("");
   }
-  L.push("--- raw log ---", report.raw);
+  // 报告自带完整串口日志（发回来就不用再单独要日志了）
+  L.push("--- serial log (TX/RX) ---");
+  L.push(rawLog && rawLog.trim() ? rawLog.trim() : report.raw);
   return L.join("\n");
 }
 
@@ -868,50 +884,29 @@ $("lang").addEventListener("change", (e) => {
 });
 $("chip").addEventListener("click", () => { $("connMask").hidden = false; });
 $("btnConnClose").addEventListener("click", () => { $("connMask").hidden = true; });
-$("btnRun").addEventListener("click", runCheck);
+$("btnRun").addEventListener("click", connectDevice);
+$("btnStart").addEventListener("click", startDiagnosis);
 $("btnDisconnect").addEventListener("click", async () => { await teardown(); $("connMask").hidden = true; });
 $("btnCopy").addEventListener("click", async () => {
   if (!lastResult) return;
-  const ok = await copyText(reportText(lastResult));
-  if (!ok) { showCopyFallback(reportText(lastResult)); return; }
+  const ok = await copyText(reportText(lastResult, display));
+  if (!ok) { showCopyFallback(reportText(lastResult, display)); return; }
   const b = $("btnCopy"); const old = b.textContent;
   b.textContent = t("copied"); setTimeout(() => { b.textContent = old; }, 1200);
 });
 $("btnCopyClose").addEventListener("click", () => { $("copyMask").hidden = true; });
 $("btnDownload").addEventListener("click", () => {
   if (!lastResult) return;
-  const blob = new Blob([reportText(lastResult)], { type: "text/plain;charset=utf-8" });
+  const blob = new Blob([reportText(lastResult, display)], { type: "text/plain;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "device-diag-" + new Date().toISOString().replace(/[:.]/g, "-") + ".txt";
   a.click();
   URL.revokeObjectURL(a.href);
 });
-$("btnCopyLog").addEventListener("click", async () => {
-  const text = display || buffer;
-  const ok = await copyText(text);
-  if (!ok) { showCopyFallback(text); return; }
-  const b = $("btnCopyLog"); const old = b.textContent;
-  b.textContent = t("copied"); setTimeout(() => { b.textContent = old; }, 1200);
-});
-$("replayFile").addEventListener("change", async (e) => {
-  const f = e.target.files && e.target.files[0];
-  if (!f) return;
-  $("replayText").value = await f.text();
-});
-$("btnReplay").addEventListener("click", () => {
-  const text = $("replayText").value;
-  if (!text.trim()) return;
-  buffer = text;
-  $("logbox").textContent = text.slice(-40000);
-  const report = parseConsole(text);
-  const locked = !(report.flags && report.flags.passwordAccepted);
-  const verdict = evaluate(report, { profile: readProfile(), locked: locked });
-  lastResult = { report, verdict };
-  render(lastResult);
-});
 
-$("verLine").textContent = "v" + APP_VERSION + " · core: parse+evaluate · 9600 8N1";
+
+$("verLine").textContent = "v" + APP_VERSION;
 applyI18n();
 setChip(false);
 
