@@ -7,7 +7,7 @@
  *  3. 本文件不碰 DOM，浏览器与 node 测试共用。
  */
 
-export const APP_VERSION = "0.2.1-alpha";
+export const APP_VERSION = "0.2.2-alpha";
 
 /** 设备控制台协议事实 */
 export const PROTOCOL = {
@@ -61,7 +61,7 @@ export function sanitizeScript(steps) {
  * 2. 固定剧本
  * ------------------------------------------------------------------ */
 
-const NET_BEST_EFFORT_NB = ["AT+CSQ", "AT+CFUN?", "AT+CPIN?", "AT+CEREG?", "AT+COPS?", "AT+CGSN", "AT+CIMI", "AT+NBAND?"];
+const NET_BEST_EFFORT_NB = ["AT+CSQ", "AT+CFUN?", "AT+CPIN?", "AT+CEREG?", "AT+COPS?", "AT+CGSN", "AT+CIMI", "AT+NCCID", "AT+NBAND?"];
 
 /** 探测：不知道 LoRa 还是 NB 时先跑这几步 */
 export function buildProbeScript(opts) {
@@ -107,7 +107,6 @@ export function buildPlanScript(variant, opts) {
       q("SERIP", "server"),
       q("CTANGLE", "angle-threshold"),
       q("ICANGLE", "compare-angle"),
-      q("ITYP", "install-type"),
       q("EXTI", "exti"),
       q("TDC", "tdc"),
       q("STDC", "stdc"),
@@ -319,6 +318,12 @@ export function parseConsole(text, meta) {
   const batFromEx = from("AT+BAT");
   const rtcFromEx = from("AT+DATE");
   const imeiFromEx = from("AT+CGSN");
+  const serialFromEx = imeiFromEx && /^[A-Za-z0-9]{8,20}$/.test(imeiFromEx) && !/^\d+$/.test(imeiFromEx) ? imeiFromEx : null;
+  const iccidFromEx = (function () {
+    const v = from("AT+NCCID");
+    const m = v && v.match(/\d{18,22}/);
+    return m ? m[0] : null;
+  })();
 
   const network = {
     csq: csqM ? { rssi: Number(csqM[1]), ber: Number(csqM[2]) } : null,
@@ -326,7 +331,8 @@ export function parseConsole(text, meta) {
     imei: pick(lastMatch(/(?:\+CGSN:\s*|IMEI[:=]\s*)(\d{14,16})/i, raw)) || (imeiFromEx && /^\d{14,16}$/.test(imeiFromEx) ? imeiFromEx : null),
     // IMSI：优先 +CIMI 回显，其次用启动块里单独打印的那行 15 位号（固件会直接打出来）
     imsi: pick(lastMatch(/(?:\+CIMI:\s*|IMSI[:=]\s*)(\d{14,16})/i, raw)) || pick(lastMatch(/(?:^|\n)[ \t]*(\d{15})[ \t]*(?=\r?\n)/, tail)),
-    iccid: iccidM ? iccidM[1] : null,
+    iccid: iccidM ? iccidM[1] : iccidFromEx,
+    serial: serialFromEx,
     njs: pick(lastMatch(/AT\+NJS=\s*(\d)/, raw)),
     attached: /(?:^|\n)[ \t]*Attached[ \t]*(?:\r?\n|$)/im.test(raw),
     uplinkAck: /(?:Publish ACK OK|Connect ACK OK)/i.test(raw),
@@ -362,7 +368,7 @@ export function parseConsole(text, meta) {
     nband: /\+NBAND:/.test(raw),
     csq: /\+CSQ:/.test(raw),
     imei: /(?:\+CGSN:|IMEI[:=])/i.test(raw),
-    iccid: /(?:\+NCCID:|ICCID[:=])/i.test(raw) || /(?<!\d)\d{19,20}(?!\d)/.test(raw),
+    iccid: /(?:\+NCCID:|ICCID[:=])/i.test(raw) || /(?<!\d)\d{19,20}(?!\d)/.test(raw) || !!iccidFromEx,
     cimi: /AT\+CIMI|\+CIMI:/.test(all),
     cereg: /\+CEREG:/.test(raw),
     angle: /Roll\s*[:=]/.test(tail),
@@ -407,6 +413,12 @@ export const DEFAULT_THRESHOLDS = {
   angleSentinel: 179,
   firmwareMinYear: 2024
 };
+
+/** 环形角度差：Roll/Pitch 取值是 ±180，直接相减会得到 260° 这种假偏差 */
+function circularDiff(a, b) {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
 
 function item(id, level, value, extra) {
   const o = { id: id, level: level, value: value === undefined ? null : value };
@@ -502,14 +514,7 @@ export function evaluate(report, opts) {
     if (profile.ctangle !== undefined) { it.expected = profile.ctangle; it.level = Number(cfg.ctangle) === Number(profile.ctangle) ? "pass" : "fail"; }
     cfgItems.push(it);
   }
-  if (R.variant === "nb") {
-    if (!seen.ityp) cfgItems.push(skip("cfg.ityp"));
-    else {
-      const it = item("cfg.ityp", cfg.ityp === null ? "warn" : "pass", cfg.ityp);
-      if (profile.ityp !== undefined) { it.expected = profile.ityp; it.level = String(cfg.ityp) === String(profile.ityp) ? "pass" : "fail"; }
-      cfgItems.push(it);
-    }
-  }
+  // 安装方式（AT+ITYP）在 v1.3 / v1.4 固件上都不支持查询，不再列为检查项
   groups.push({ id: "config", items: cfgItems });
 
   /* 电源 */
@@ -535,7 +540,7 @@ export function evaluate(report, opts) {
   else sen.push(item("sen.icangle", "pass", R.icangle.roll + " / " + R.icangle.pitch, { unit: "°" }));
 
   if (R.angle && R.icangle) {
-    const dMax = Math.max(Math.abs(R.angle.roll - R.icangle.roll), Math.abs(R.angle.pitch - R.icangle.pitch));
+    const dMax = Math.max(circularDiff(R.angle.roll, R.icangle.roll), circularDiff(R.angle.pitch, R.icangle.pitch));
     const ct = Number.isFinite(cfg.ctangle) ? cfg.ctangle : null;
     if (ct !== null) {
       sen.push(item("sen.alarmDiff", dMax > ct ? "warn" : "pass", dMax.toFixed(2), { unit: "°", expected: ct }));
@@ -571,6 +576,7 @@ export function evaluate(report, opts) {
     if (net.imsi) netItems.push(item("net.sim", "pass", net.imsi));
     else if (seen.cimi) netItems.push(item("net.sim", "warn", null));
     else netItems.push(skip("net.sim"));
+    netItems.push(net.serial ? item("net.serial", "pass", net.serial) : skip("net.serial"));
     netItems.push(net.imei ? item("net.imei", "pass", net.imei) : skip("net.imei"));
     netItems.push(net.iccid ? item("net.iccid", "pass", net.iccid) : skip("net.iccid"));
   } else if (R.variant === "lora") {

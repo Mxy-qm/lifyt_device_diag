@@ -305,6 +305,35 @@ test("入网成功 + 上报 ACK 会被认出", () => {
   assert.equal(L.get("net.csq"), "warn");
   assert.equal(L.get("sen.alarmDiff"), "warn");
   assert.equal(v.verdict, "warn");
+  assert.equal(r.network.serial, "MPY26FG6D005054", "CGSN 的字母数字是模组序列号，不是 IMEI");
+  assert.equal(r.network.imei, null);
+  assert.equal(r.network.iccid, "89860000000000000012", "ICCID 从 AT+NCCID 里取");
+  assert.equal(L.get("net.serial"), "pass");
+  assert.equal(L.get("net.iccid"), "pass");
+});
+
+test("角度偏差按环形算，不出现 260° 这种假值", () => {
+  const log = [
+    "DRAGINO TSE NB Device",
+    "Image Version: TSE NB v1.4 260623",
+    "Time: 26/11/26 16:26:58",
+    "Angle", "Roll=-90.86 Pitch=111.89",
+    "Internal Comparison Angle", "Roll:-90.39 Pitch:-148.93",
+    "Device ID= 161628430", "Product ID= 16000695", "AuthInfo= LFTAN0064065Xch",
+    "Correct Password",
+    "TX> AT+CTANGLE=?", "10", "OK"
+  ].join("\n");
+  const v = evaluate(parseConsole(log), { locked: false });
+  const it = v.groups.find((g) => g.id === "sensor").items.find((i) => i.id === "sen.alarmDiff");
+  assert.equal(it.value, "99.18", "环形差应为 99.18，而不是 260.82");
+  assert.equal(it.level, "warn");
+
+  // 边界：175 与 -175 只差 10°
+  const edge = log.replace("Angle\nRoll=-90.86 Pitch=111.89", "Angle\nRoll=-90.86 Pitch=175").replace("Roll:-90.39 Pitch:-148.93", "Roll:-90.39 Pitch:-175");
+  const v2 = evaluate(parseConsole(edge), { locked: false });
+  const it2 = v2.groups.find((g) => g.id === "sensor").items.find((i) => i.id === "sen.alarmDiff");
+  assert.equal(it2.value, "10.00");
+  assert.equal(it2.level, "pass", "正好等于阈值不报警");
 });
 
 test("ATZ 之后密码被吞：判定要 fail，不能被开头那次成功糊过去", () => {
